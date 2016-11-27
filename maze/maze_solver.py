@@ -1,6 +1,6 @@
 import queue
 import numpy
-from mazelib import maze_generator
+from maze import maze_generator
 
 class Solved_maze:
 

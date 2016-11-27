@@ -2,3 +2,6 @@ env/
 .ipynb_checkpoints/
 *.pyc
 __pycache__/
+.cache/
+dist/
+maze.egg-info

@@ -39,6 +39,19 @@ def generate_maze(width=81, height=51, complexity=.75, density=.75):
 
     return Z
 
+def remove_frame( array ):
+    return array[1:-1,1:-1]
+
+def val_to_rand( val ):
+    if random.randint(0,2) == 1: return val
+    if val == 1: return 1
+    if val < 0: return - random.randint(1,10)
+    if val >=0: return random.randint(2,10)
+
+def randomize( array ):
+    f = numpy.vectorize( val_to_rand )
+    return f( array )
+
 def print_maze( Z ):
     pyplot.figure(figsize=(10, 5))
     pyplot.imshow( -Z, cmap=pyplot.cm.binary, interpolation='nearest')

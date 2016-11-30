@@ -3,7 +3,7 @@ from setuptools import setup
 
 setup(
     name='maze',
-    version='0.1',
+    version='0.1.1',
     description='generate and solve maze',
     author='Lukas Lopatovsky',
     author_email='lopatovsky@gmail.com',

@@ -15,8 +15,12 @@ class Solved_maze:
 
         start_point = numpy.where(self.__a == 1)
 
+        #init matrices
         self.distances  = numpy.full( self.__a.shape, -1, dtype=int )
         self.directions = numpy.full( self.__a.shape, b'#', dtype=('a',1))
+        #set blank spaces
+
+        self.directions[ numpy.where(  self.__a >= 0 ) ] = b' ';
 
         self.__bfs( start_point )
 

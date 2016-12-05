@@ -5,3 +5,6 @@ __pycache__/
 .cache/
 dist/
 maze.egg-info
+*.so
+*.o
+*.html

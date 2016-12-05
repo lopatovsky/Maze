@@ -265,5 +265,10 @@ def test_notreachableisrechable():
 
     assert numpy.array_equal( A , B )
 
-
+def test_long():
+    """time test"""
+    A  = numpy.full( (600,600), 0, dtype=int )
+    A[8,7] = 1
+    B = maze.analyze( A )
+    assert( B.distances[2,2] == 11)
 

@@ -2,37 +2,38 @@
 import queue
 import numpy
 cimport numpy
+cimport cython
 from maze import maze_generator
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
 cdef class Solved_maze:
 
 
-    cdef readonly numpy.ndarray directions
-    cdef readonly numpy.ndarray distances
-    cdef readonly numpy.ndarray __a
+    cdef readonly char [:,:] directions
+    cdef readonly int [:,:] distances
+    cdef readonly int [:,:] __a
     cdef  bint is_reachable
 
     def __init__(self, array):
 
         sx, sy = array.shape
         #create frame
-        self.__a = numpy.full( (sx+2, sy+2), -1, dtype=int )
+        self.__a = numpy.full( (sx+2, sy+2), -1, dtype=numpy.int32 )
 
         #copy data
-        self.__a[1:-1,1:-1] = array
+        numpy.asarray(self.__a)[1:-1,1:-1] = array
 
-        start_point = numpy.where(self.__a == 1)
+        start_point = numpy.where(  numpy.asarray(self.__a) == 1)
 
         sx = self.__a.shape[0]
         sy = self.__a.shape[1]
 
         #init matrices
-        self.distances  = numpy.full( (sx,sy), -1, dtype=int )
+        self.distances  = numpy.full( (sx,sy), -1, dtype=numpy.int32 )
         self.directions = numpy.full( (sx,sy), b'#', dtype=('a',1))
         #set blank spaces
 
-        self.directions[ numpy.where(  self.__a >= 0 ) ] = b' ';
+        numpy.asarray(self.directions)[ numpy.asarray(self.__a) >= 0  ] = b' ';
 
 
         x , y = start_point
@@ -42,8 +43,9 @@ cdef class Solved_maze:
         self.distances = self.distances[1:-1,1:-1]
         self.directions = self.directions[1:-1,1:-1]
 
-        self.is_reachable =  len( self.__a[ self.__a >= 0 ] ) == 0
+        self.is_reachable =  len( numpy.asarray(self.__a)[ numpy.asarray(self.__a) >= 0 ] ) == 0
 
+    @cython.wraparound(False)
     @cython.boundscheck(False)
     cdef int __update_queue( self, int size, int * q, int x , int y, char ch, int time ):
 
@@ -63,6 +65,8 @@ cdef class Solved_maze:
         else:
             return size
 
+    @cython.wraparound(False)
+    @cython.boundscheck(False)
     cdef __bfs( self, int x, int y, int sx, int sy ):
 
         cdef int ** q = <int **>PyMem_Malloc( (2) *sizeof(int * ))

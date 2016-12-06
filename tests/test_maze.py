@@ -285,3 +285,10 @@ def test_super_long():
     A[8,7] = 1
     B = maze.analyze( A )
     assert( B.distances[2,2] == 11)
+
+def test_extreme_long():
+    """time test"""
+    A  = numpy.full( (5000,5000), 0, dtype=int )
+    A[8,7] = 1
+    B = maze.analyze( A )
+    assert( B.distances[2,2] == 11)

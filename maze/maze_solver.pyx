@@ -1,4 +1,3 @@
-
 import queue
 import numpy
 cimport numpy
@@ -13,10 +12,19 @@ cdef struct coords:
 cdef class Solved_maze:
 
 
-    cdef readonly char [:,:] directions
-    cdef readonly int [:,:] distances
+    cdef readonly char [:,:] _directions
+    cdef readonly int [:,:] _distances
     cdef readonly int [:,:] __a
     cdef readonly bint is_reachable
+
+    @property
+    def directions(self):
+        return numpy.asarray( self._directions )
+
+    @property
+    def distances(self):
+        return numpy.asarray( self._distances )
+
 
     def __init__(self, array):
 
@@ -33,22 +41,19 @@ cdef class Solved_maze:
         sy = self.__a.shape[1]
 
         #init matrices
-        self.distances  = numpy.full( (sx,sy), -1, dtype=numpy.int32 )
-        self.directions = numpy.full( (sx,sy), b'#', dtype=('a',1))
+        self._distances  = numpy.full( (sx,sy), -1, dtype=numpy.int32 )
+        self._directions = numpy.full( (sx,sy), b'#', dtype=('a',1))
         #set blank spaces
 
-        print('*')
-        print(self.directions )
-
-        numpy.asarray(self.directions)[ numpy.asarray(self.__a) >= 0  ] = b' ';
+        numpy.asarray(self._directions)[ numpy.asarray(self.__a) >= 0  ] = b' ';
 
 
         x , y = start_point
         self.__bfs( x, y , sx, sy)
 
         #destroy frame
-        self.distances = self.distances[1:-1,1:-1]
-        self.directions = self.directions[1:-1,1:-1]
+        self._distances = self._distances[1:-1,1:-1]
+        self._directions = self._directions[1:-1,1:-1]
 
         print( numpy.asarray(self.__a)[ numpy.asarray(self.__a) >= 0 ] )
 
@@ -58,18 +63,13 @@ cdef class Solved_maze:
     @cython.boundscheck(False)
     cdef int __update_queue( self, int size, int * q, int x , int y, char ch, int time ):
 
-        #print(ch)
         if self.__a[x,y] >= 0:
             q[ size * 2 ] = x
             q[ size * 2 + 1 ] = y
 
-            self.directions[ x,y ] = ch
-           # print("*")
-           # print(ch)
-           # print( self.directions[x,y].dtype )
-           # print(self.directions[ x,y ])
-            self.distances[ x,y ] = time
-            self.__a[ x,y ] = -1 #visited
+            self._directions[ x,y ] = ch
+            self._distances[ x,y ] = time
+            self.__a[ x,y ] = -1
             return size + 1
         else:
             return size
@@ -118,24 +118,28 @@ cdef class Solved_maze:
         if ch == ord('>'): return coords(x, y+1)
         if ch == ord('<'): return coords(x, y-1)
         raise Exception("Wrong move")
-    
+
     @cython.wraparound(False)
     @cython.boundscheck(False)
     def path(self, _x, _y ):
-        
-        cdef coords p = coords(_x,_y)
-  
 
-        if self.directions[p.x,p.y] == ord('#'):  raise Exception("Unreachable point")
+        cdef coords p = coords(_x,_y)
+
+        print("*")
+        print(self._directions[p.x,p.y])
+        print("*")
+
+        if self._directions[p.x,p.y] == ord('#'):  raise ValueError('The path doesn\'t exists.')
+        if self._directions[p.x,p.y] == ord(' '):  raise ValueError('The path doesn\'t exists.')
         ret = []
 
         while True:
-            
+
             ret.append( (p.x,p.y) )
-            ch = self.directions[p.x,p.y]
+            ch = self._directions[p.x,p.y]
             if ch == ord('X'): break;
             p = self.__move_step( ch, p.x, p.y )
-           
+
         return ret
 
 def analyze(array):

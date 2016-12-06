@@ -6,13 +6,17 @@ cimport cython
 from maze import maze_generator
 from cpython.mem cimport PyMem_Malloc, PyMem_Realloc, PyMem_Free
 
+cdef struct coords:
+    int x
+    int y
+
 cdef class Solved_maze:
 
 
     cdef readonly char [:,:] directions
     cdef readonly int [:,:] distances
     cdef readonly int [:,:] __a
-    cdef  bint is_reachable
+    cdef readonly bint is_reachable
 
     def __init__(self, array):
 
@@ -33,6 +37,9 @@ cdef class Solved_maze:
         self.directions = numpy.full( (sx,sy), b'#', dtype=('a',1))
         #set blank spaces
 
+        print('*')
+        print(self.directions )
+
         numpy.asarray(self.directions)[ numpy.asarray(self.__a) >= 0  ] = b' ';
 
 
@@ -42,6 +49,8 @@ cdef class Solved_maze:
         #destroy frame
         self.distances = self.distances[1:-1,1:-1]
         self.directions = self.directions[1:-1,1:-1]
+
+        print( numpy.asarray(self.__a)[ numpy.asarray(self.__a) >= 0 ] )
 
         self.is_reachable =  len( numpy.asarray(self.__a)[ numpy.asarray(self.__a) >= 0 ] ) == 0
 
@@ -102,29 +111,32 @@ cdef class Solved_maze:
         PyMem_Free(q[1])
         PyMem_Free(q)
 
-    def __move_step( self, ch , x, y ):
+    cdef coords __move_step( self, char ch , int x, int y ):
 
-        if ch == b'v': return (x+1, y)
-        if ch == b'^': return (x-1, y)
-        if ch == b'>': return (x, y+1)
-        if ch == b'<': return (x, y-1)
+        if ch == ord('v'): return coords(x+1, y)
+        if ch == ord('^'): return coords(x-1, y)
+        if ch == ord('>'): return coords(x, y+1)
+        if ch == ord('<'): return coords(x, y-1)
         raise Exception("Wrong move")
+    
+    @cython.wraparound(False)
+    @cython.boundscheck(False)
+    def path(self, _x, _y ):
+        
+        cdef coords p = coords(_x,_y)
+  
 
-    def path(self, *point ):
-
-        print( type(point) )
-
-        if self.directions[point] == b'#':  raise Exception("Unreachable point")
-        p = []
+        if self.directions[p.x,p.y] == ord('#'):  raise Exception("Unreachable point")
+        ret = []
 
         while True:
-
-            p.append( point )
-            ch = self.directions[point]
-            if ch == b'X': break;
-            point = self.__move_step( ch, *point )
-
-        return p
+            
+            ret.append( (p.x,p.y) )
+            ch = self.directions[p.x,p.y]
+            if ch == ord('X'): break;
+            p = self.__move_step( ch, p.x, p.y )
+           
+        return ret
 
 def analyze(array):
     return Solved_maze( array )

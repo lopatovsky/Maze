@@ -56,8 +56,6 @@ def test_normaldir():
     """Test directions"""
     A = gen_norm().directions
 
-    print( repr(A) )
-
     B = numpy.array( [[b'#', b'#', b'#', b'#', b'#', b'#', b'#', b'#', b'#', b'#', b'#'],
        [b'#', b'>', b'>', b'>', b'>', b'v', b'<', b'<', b'<', b'<', b'#'],
        [b'#', b'^', b'#', b'#', b'#', b'X', b'#', b'#', b'#', b'^', b'#'],
@@ -69,6 +67,13 @@ def test_normaldir():
        [b'#', b'^', b'#', b'#', b'#', b'v', b'#', b'#', b'#', b'^', b'#'],
        [b'#', b'^', b'<', b'<', b'<', b'<', b'>', b'>', b'>', b'^', b'#'],
        [b'#', b'#', b'#', b'#', b'#', b'#', b'#', b'#', b'#', b'#', b'#']] )
+
+
+    print( repr(A) )
+    print("&&&&&&&&&&&&&&&&&&&&")
+    print(A)
+    print(B)
+
 
     assert numpy.array_equal( A , B )
 
@@ -90,6 +95,9 @@ def test_normalisrechable():
 
     print( repr(A) )
     B = True
+
+    print(A)
+    print(B)
 
     assert numpy.array_equal( A , B )
 
@@ -292,3 +300,16 @@ def test_extreme_long():
     A[8,7] = 1
     B = maze.analyze( A )
     assert( B.distances[2,2] == 11)
+
+def test_extreme_long_path():
+    """time test"""
+    A  = numpy.full( (5000,5000), 0, dtype=int )
+    A[8,7] = 1
+    B = maze.analyze( A )
+    B.path(4999,4999)
+    B.path(4997,4999)
+    B.path(4996,4999)
+    B.path(4995,4999)
+    B.path(4999,4995)    
+    assert( B.distances[2,2] == 11)
+

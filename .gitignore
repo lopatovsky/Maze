@@ -8,3 +8,5 @@ maze.egg-info
 *.so
 *.o
 *.html
+*.prof
+*.c

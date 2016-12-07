@@ -35,8 +35,8 @@ cdef class Solved_maze:
         #copy data
         numpy.asarray(self.__a)[1:-1,1:-1] = array
 
-        #start_points = numpy.where(  numpy.asarray(self.__a) == 1 )
-        start_points = numpy.asarray(self.__a)[ numpy.asarray(self.__a) == 1 ]
+        start_points = numpy.argwhere(  numpy.asarray(self.__a) == 1 )
+        #start_points = numpy.asarray(self.__a)[ numpy.asarray(self.__a) == 1 ]
 
         sx = self.__a.shape[0]
         sy = self.__a.shape[1]

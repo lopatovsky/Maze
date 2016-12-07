@@ -1,11 +1,13 @@
 from PyQt5 import QtWidgets, uic, QtGui, QtCore, QtSvg
 import numpy
+import glob
+import os
 from maze import maze_generator, maze_solver
 
 CELL_SIZE = 32
 
 class image:
-    def __init__( self, name, path, num ):
+    def __init__( self, name, path, num = -1 ):
         self.name = name
         self.path = path
         self.num = num
@@ -15,6 +17,11 @@ IMG = {}
 
 for (item, num) in [ ('Grass',0), ('Wall',-1), ('Wall2',-2), ('Castle',1), ('Dude1',2), ('Dude2',3), ('Dude3',4), ('Dude4',5), ('Dude5',6) ]:
     IMG[ item ] = image( item, 'img/' + item.lower() + '.svg', num )
+
+LINES = {}
+for item in glob.glob('img/lines/*.svg'):
+    name = os.path.splitext( os.path.basename(item) )[0]
+    LINES[ name ] = image( name, item)
 
 VALUE_ROLE = QtCore.Qt.UserRole
 
@@ -37,8 +44,26 @@ class GridWidget(QtWidgets.QWidget):
 
     def __get_paths(self):
 
-        for item in self.array:
-            print(item)
+        solved = maze_solver.analyze( self.array )
+        paths = numpy.full( self.array.shape  , b'0000', dtype=('a',4))
+        directions = solved.directions
+
+
+        print(self.array)
+        dudes = numpy.argwhere(self.array >= 2)
+
+        print("$$")
+        print(dudes)
+
+
+
+        for dude in dudes:
+            path = solved.path( *dude )
+            print(path)
+            for pos in path:
+                paths[ pos ] = b'1111'
+
+        return paths
 
     def paintEvent(self, event):
         #TODO: more castles?
@@ -58,13 +83,12 @@ class GridWidget(QtWidgets.QWidget):
         """
         row_size, col_size = self.array.shape
 
-        maze_solver.analyze( self.array )
-
         paths = self.__get_paths()
 
         painter = QtGui.QPainter(self)  # budeme kreslit
 
 
+        print(paths)
 
         for row in range(row_size):
             for column in range(col_size):
@@ -72,7 +96,6 @@ class GridWidget(QtWidgets.QWidget):
                 x, y = ltop(row, column)
                 rect = QtCore.QRectF(x, y, CELL_SIZE, CELL_SIZE)
 
-                # šedá pro zdi, zelená pro trávu
                 color = QtGui.QColor(255, 255, 255)
 
                 # vyplníme čtvereček barvou
@@ -80,9 +103,18 @@ class GridWidget(QtWidgets.QWidget):
 
                 IMG['Grass'].svg.render(painter,rect)
 
-                for img in IMG.values():
-                    if self.array[row, column] == img.num:
-                        img.svg.render(painter,rect)
+
+                if paths[row,column] != b'0000':
+                    LINES[ paths[row,column].decode("utf-8") ].svg.render(painter,rect)
+
+                #TODO - space for more effective approach
+                if self.array[row,column] != 0:
+                    for img in IMG.values():
+                        if self.array[row, column] == img.num:
+                            img.svg.render(painter,rect)
+
+
+
 
     def mousePressEvent(self, event):
 
@@ -99,7 +131,7 @@ class GridWidget(QtWidgets.QWidget):
             else:
                 return
 
-            self.update(*ltop(row,column), CELL_SIZE, CELL_SIZE ) # or self.update()  -- update all
+            self.update()
 
 
 
@@ -163,7 +195,8 @@ def main():
     with open ('mainwindow.ui') as f:
         uic.loadUi(f,window)
 
-    array = numpy.zeros((20,20), dtype=numpy.int8 )
+        #TODO generator generuje len liche/sude
+    array = numpy.zeros((10,10), dtype=numpy.int8 )
     grid = GridWidget(array)
 
     scroll_area = window.findChild(QtWidgets.QScrollArea, 'scrollArea') # alebo aj QtWidgets.Qwidget - dedi

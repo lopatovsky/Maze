@@ -1,3 +1,3 @@
-from .maze_solver import main
+from .gui import main
 
 main()

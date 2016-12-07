@@ -34,15 +34,18 @@ class GridWidget(QtWidgets.QWidget):
         self.setMaximumSize(*size)
         self.resize(*size)
 
-    '''def paintEvent( self, event):
 
-        rect = event.rect()
-        painter = QtGui.QPainter(self)  #paint to anything
-        color = QtGui.QColor(0,75,0)
-        painter.fillRect(rect, color )'''
+    def __get_paths(self):
+
+        for item in self.array:
+            print(item)
 
     def paintEvent(self, event):
-        rect = event.rect()  # získáme informace o překreslované oblasti
+        #TODO: more castles?
+
+        print('paint')
+
+        """rect = event.rect()  # získáme informace o překreslované oblasti
 
         # zjistíme, jakou oblast naší matice to představuje
         # nesmíme se přitom dostat z matice ven
@@ -52,11 +55,19 @@ class GridWidget(QtWidgets.QWidget):
         row_max, col_max = ptol(rect.right(), rect.bottom())
         row_max = min(row_max + 1, self.array.shape[0])
         col_max = min(col_max + 1, self.array.shape[1])
+        """
+        row_size, col_size = self.array.shape
+
+        maze_solver.analyze( self.array )
+
+        paths = self.__get_paths()
 
         painter = QtGui.QPainter(self)  # budeme kreslit
 
-        for row in range(row_min, row_max):
-            for column in range(col_min, col_max):
+
+
+        for row in range(row_size):
+            for column in range(col_size):
                 # získáme čtvereček, který budeme vybarvovat
                 x, y = ltop(row, column)
                 rect = QtCore.QRectF(x, y, CELL_SIZE, CELL_SIZE)
@@ -74,6 +85,8 @@ class GridWidget(QtWidgets.QWidget):
                         img.svg.render(painter,rect)
 
     def mousePressEvent(self, event):
+
+        print('press')
         row, column = ptol( event.x() , event.y() )
 
         shape = self.array.shape
@@ -111,7 +124,7 @@ def new_dialog(window,grid):
     if random:
         grid.array = maze_generator.generate_maze( rows, cols )
     else:
-        grid.array = numpy.zeros((rows, cols), dtype=numpy.int8)
+        grid.array = numpy.zeros((rows, cols), dtype=numpy.int32)
 
     # Bludiště může být jinak velké, tak musíme změnit velikost Gridu;
     # (tento kód používáme i jinde, měli bychom si na to udělat funkci!)

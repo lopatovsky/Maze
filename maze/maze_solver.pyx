@@ -35,7 +35,8 @@ cdef class Solved_maze:
         #copy data
         numpy.asarray(self.__a)[1:-1,1:-1] = array
 
-        start_point = numpy.where(  numpy.asarray(self.__a) == 1)
+        #start_points = numpy.where(  numpy.asarray(self.__a) == 1 )
+        start_points = numpy.asarray(self.__a)[ numpy.asarray(self.__a) == 1 ]
 
         sx = self.__a.shape[0]
         sy = self.__a.shape[1]
@@ -47,15 +48,13 @@ cdef class Solved_maze:
 
         numpy.asarray(self._directions)[ numpy.asarray(self.__a) >= 0  ] = b' ';
 
-
-        x , y = start_point
-        self.__bfs( x, y , sx, sy)
+        self.__bfs( start_points , sx, sy)
 
         #destroy frame
         self._distances = self._distances[1:-1,1:-1]
         self._directions = self._directions[1:-1,1:-1]
 
-        print( numpy.asarray(self.__a)[ numpy.asarray(self.__a) >= 0 ] )
+        #print( numpy.asarray(self.__a)[ numpy.asarray(self.__a) >= 0 ] )
 
         self.is_reachable =  len( numpy.asarray(self.__a)[ numpy.asarray(self.__a) >= 0 ] ) == 0
 
@@ -76,7 +75,7 @@ cdef class Solved_maze:
 
     @cython.wraparound(False)
     @cython.boundscheck(False)
-    cdef __bfs( self, int x, int y, int sx, int sy ):
+    cdef __bfs( self, starts, int sx, int sy ):
 
         cdef int ** q = <int **>PyMem_Malloc( (2) *sizeof(int * ))
         q[0] = <int *>PyMem_Malloc( (sx*sy) *sizeof(int))
@@ -86,8 +85,16 @@ cdef class Solved_maze:
         cdef int i
         cdef int[2] size
         size[0] = size[1] = 0
+        cdef x,y
 
-        size[0] =  self.__update_queue(size[0], q[0], x,y, b'X',0 )
+        print("%%%")
+        print(starts)
+        print("%%%")
+
+
+        for s in starts:
+            x,y = s
+            size[0] = self.__update_queue(size[0], q[0], x, y, b'X',0 )
 
         while True:
 

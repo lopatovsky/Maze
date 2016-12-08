@@ -184,11 +184,8 @@ def alert_dialog(window, modal, title, text, detail, icon):
 
 def about_dialog(window):
 
-    dialog = QtWidgets.QDialog(window)
-    with open ('GUI/hello.ui') as f:
-        uic.loadUi(f,dialog)
-
-    dialog.show()
+    html = '<h1>Dude\'s Maze</h1><p>The maze creator, generator and solver. Choose your dude and let find his way towards the castle!</p><hr/><p>by Lukáš Lopatovský , source: <a href="https://github.com/lopatovsky/Maze">GitHub</a></p><p>GPL license</p> <p>All the graphic come from: <a href="http://opengameart.org/users/kenney">OpenGameArt.org.</a></p>'
+    alert_dialog(window, False, 'About', html , '', QtWidgets.QMessageBox.Information )
 
 def save_dialog(window, grid):
 

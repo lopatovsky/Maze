@@ -11,7 +11,7 @@ setup(
     license='GPL',
     url='https://github.com/lopatovsky/Maze',
     py_modules=['maze'],
-    ext_modules=cythonize('maze/maze_solver.pyx', language_level=3, include_dirs=[numpy.get_include()]),
+    ext_modules=cythonize('maze/*.pyx', language_level=3, include_dirs=[numpy.get_include()]),
     include_dirs=[numpy.get_include()],
     install_requires=[
         'Cython',

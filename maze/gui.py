@@ -37,13 +37,21 @@ def ptol(x,y):
 def ltop(row,column):
     return column * CELL_SIZE , row * CELL_SIZE
 
+
+
+
 class GridWidget(QtWidgets.QWidget):
 
     def __init__(self, array):
 
         super().__init__()
         self.array = array
-        size = ltop(*array.shape)
+        self.set_grid_size()
+
+    def set_grid_size(self):
+        # Bludiště může být jinak velké, tak musíme změnit velikost Gridu;
+        rows, cols = self.array.shape
+        size = ltop(rows, cols)
         self.setMinimumSize(*size)
         self.setMaximumSize(*size)
         self.resize(*size)
@@ -115,7 +123,6 @@ class GridWidget(QtWidgets.QWidget):
 
     def mousePressEvent(self, event):
 
-        print('press')
         row, column = ptol( event.x() , event.y() )
 
         shape = self.array.shape
@@ -131,12 +138,7 @@ class GridWidget(QtWidgets.QWidget):
             self.update()
 
 
-def set_grid_size(grid, rows, cols):
-    # Bludiště může být jinak velké, tak musíme změnit velikost Gridu;
-    size = ltop(rows, cols)
-    grid.setMinimumSize(*size)
-    grid.setMaximumSize(*size)
-    grid.resize(*size)
+
 
 def open_dialog(window, grid):
 
@@ -152,15 +154,41 @@ def open_dialog(window, grid):
     try:
         grid.array = numpy.loadtxt(path, dtype=numpy.int32)
     except OSError as e:
-        print( str(e) )
+        alert_dialog(window, True, 'Error', 'File not found!', str(e), QtWidgets.QMessageBox.Warning )
         return
     except ValueError as e:
-        print('Corrupted file: ' + str(e) )
+        alert_dialog(window, True, 'Error', 'Corrupted file!', str(e), QtWidgets.QMessageBox.Warning )
         return
 
-    set_grid_size(grid, (* grid.array.shape ))
+    grid.set_grid_size()
     grid.update()
 
+def alert_dialog(window, modal, title, text, detail, icon):
+
+    dialog = QtWidgets.QMessageBox(window)
+    with open ('openmaze.ui') as f:
+        uic.loadUi(f,dialog)
+
+    dialog.setWindowTitle(title)
+    dialog.setText(text)
+    if detail != '': dialog.setDetailedText(detail)
+    dialog.setIcon(icon)
+    if modal:
+        result = dialog.exec()
+
+        if result == QtWidgets.QDialog.Rejected:
+            return
+    else:
+        dialog.show()
+
+
+def about_dialog(window):
+
+    dialog = QtWidgets.QDialog(window)
+    with open ('hello.ui') as f:
+        uic.loadUi(f,dialog)
+
+    dialog.show()
 
 def save_dialog(window, grid):
 
@@ -173,8 +201,9 @@ def save_dialog(window, grid):
         return
 
     path = dialog.selectedFiles()[0]
-    print(path)
+
     numpy.savetxt(path, grid.array )
+
 
 
 def new_dialog(window,grid):
@@ -195,11 +224,15 @@ def new_dialog(window,grid):
 
     # Vytvoření nového bludiště
     if random:
-        grid.array = maze_generator.generate_maze( rows, cols )
+        grid.array = maze_generator.generate_maze( cols, rows )
     else:
         grid.array = numpy.zeros((rows, cols), dtype=numpy.int32)
 
-    set_grid_size(grid, rows, cols)
+    print(grid.array.shape )
+
+    grid.set_grid_size()
+
+    grid.update() #TODO --when big resolution update only currently visible field
 
 
 
@@ -233,7 +266,7 @@ def main():
         uic.loadUi(f,window)
 
         #TODO generator generuje len liche/sude
-    array = numpy.zeros((10,10), dtype=numpy.int8 )
+    array = numpy.zeros((10,13), dtype=numpy.int8 )
     grid = GridWidget(array)
 
     scroll_area = window.findChild(QtWidgets.QScrollArea, 'scrollArea') # alebo aj QtWidgets.Qwidget - dedi
@@ -245,9 +278,11 @@ def main():
     action_open = window.findChild(QtWidgets.QAction, 'actionOpen')
     action_open.triggered.connect(lambda: open_dialog(window,grid) )
 
-
     action_save = window.findChild(QtWidgets.QAction, 'actionSave')
     action_save.triggered.connect(lambda: save_dialog(window,grid) )
+
+    action_about = window.findChild(QtWidgets.QAction, 'actionAbout')
+    action_about.triggered.connect(lambda: about_dialog(window) )
 
 
 

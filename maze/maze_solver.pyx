@@ -85,12 +85,7 @@ cdef class Solved_maze:
         cdef int i
         cdef int[2] size
         size[0] = size[1] = 0
-        cdef x,y
-
-        print("%%%")
-        print(starts)
-        print("%%%")
-
+        cdef int x,y
 
         for s in starts:
             x,y = s

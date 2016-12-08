@@ -143,7 +143,7 @@ class GridWidget(QtWidgets.QWidget):
 def open_dialog(window, grid):
 
     dialog = QtWidgets.QFileDialog(window)
-    with open ('openmaze.ui') as f:
+    with open ('GUI/openmaze.ui') as f:
         uic.loadUi(f,dialog)
     result = dialog.exec()
 
@@ -166,7 +166,7 @@ def open_dialog(window, grid):
 def alert_dialog(window, modal, title, text, detail, icon):
 
     dialog = QtWidgets.QMessageBox(window)
-    with open ('openmaze.ui') as f:
+    with open ('GUI/openmaze.ui') as f:
         uic.loadUi(f,dialog)
 
     dialog.setWindowTitle(title)
@@ -185,7 +185,7 @@ def alert_dialog(window, modal, title, text, detail, icon):
 def about_dialog(window):
 
     dialog = QtWidgets.QDialog(window)
-    with open ('hello.ui') as f:
+    with open ('GUI/hello.ui') as f:
         uic.loadUi(f,dialog)
 
     dialog.show()
@@ -193,7 +193,7 @@ def about_dialog(window):
 def save_dialog(window, grid):
 
     dialog = QtWidgets.QFileDialog(window)
-    with open ('openmaze.ui') as f:
+    with open ('GUI/openmaze.ui') as f:
         uic.loadUi(f,dialog)
     result = dialog.exec()
 
@@ -209,7 +209,7 @@ def save_dialog(window, grid):
 def new_dialog(window,grid):
 
     dialog = QtWidgets.QDialog(window)
-    with open ('newmaze.ui') as f:
+    with open ('GUI/newmaze.ui') as f:
         uic.loadUi(f,dialog)
     result = dialog.exec()
 
@@ -228,7 +228,6 @@ def new_dialog(window,grid):
     else:
         grid.array = numpy.zeros((rows, cols), dtype=numpy.int32)
 
-    print(grid.array.shape )
 
     grid.set_grid_size()
 
@@ -262,7 +261,7 @@ def fill_palette( palette, grid ):
 def main():
     app = QtWidgets.QApplication([])
     window = QtWidgets.QMainWindow()
-    with open ('mainwindow.ui') as f:
+    with open ('GUI/mainwindow.ui') as f:
         uic.loadUi(f,window)
 
         #TODO generator generuje len liche/sude

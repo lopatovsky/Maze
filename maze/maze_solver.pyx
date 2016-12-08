@@ -127,9 +127,6 @@ cdef class Solved_maze:
 
         cdef coords p = coords(_x,_y)
 
-        print("*")
-        print(self._directions[p.x,p.y])
-        print("*")
 
         if self._directions[p.x,p.y] == ord('#'):  raise ValueError('The path doesn\'t exists.')
         if self._directions[p.x,p.y] == ord(' '):  raise ValueError('The path doesn\'t exists.')

@@ -10,3 +10,4 @@ maze.egg-info
 *.html
 *.prof
 *.c
+maze_examples/

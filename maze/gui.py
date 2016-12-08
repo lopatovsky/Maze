@@ -4,7 +4,7 @@ import glob
 import os
 from maze import maze_generator, maze_solver
 
-CELL_SIZE = 16
+CELL_SIZE = 24
 
 class image:
     def __init__( self, name, path, num = -1 ):
@@ -66,6 +66,7 @@ class GridWidget(QtWidgets.QWidget):
             get_in = DIR_TO_NUM[ directions[ path[0] ] ]  #first p doesn't have in, use out instead
 
             for p in path:
+                #if paths[ (*p) , get_in ] == b'1': break #optimization for too many dudes
                 paths[ (*p) , get_in ] = b'1'
                 if directions[p] == b'X': break
                 get_out = DIR_TO_NUM[ directions[p] ]
@@ -75,9 +76,6 @@ class GridWidget(QtWidgets.QWidget):
         return paths
 
     def paintEvent(self, event):
-        #TODO: more castles?
-
-        print('paint')
 
         row_size, col_size = self.array.shape
 
@@ -115,8 +113,6 @@ class GridWidget(QtWidgets.QWidget):
                             img.svg.render(painter,rect)
 
 
-
-
     def mousePressEvent(self, event):
 
         print('press')
@@ -135,6 +131,50 @@ class GridWidget(QtWidgets.QWidget):
             self.update()
 
 
+def set_grid_size(grid, rows, cols):
+    # Bludiště může být jinak velké, tak musíme změnit velikost Gridu;
+    size = ltop(rows, cols)
+    grid.setMinimumSize(*size)
+    grid.setMaximumSize(*size)
+    grid.resize(*size)
+
+def open_dialog(window, grid):
+
+    dialog = QtWidgets.QFileDialog(window)
+    with open ('openmaze.ui') as f:
+        uic.loadUi(f,dialog)
+    result = dialog.exec()
+
+    if result == QtWidgets.QDialog.Rejected:
+        return
+
+    path = dialog.selectedFiles()[0]
+    try:
+        grid.array = numpy.loadtxt(path, dtype=numpy.int32)
+    except OSError as e:
+        print( str(e) )
+        return
+    except ValueError as e:
+        print('Corrupted file: ' + str(e) )
+        return
+
+    set_grid_size(grid, (* grid.array.shape ))
+    grid.update()
+
+
+def save_dialog(window, grid):
+
+    dialog = QtWidgets.QFileDialog(window)
+    with open ('openmaze.ui') as f:
+        uic.loadUi(f,dialog)
+    result = dialog.exec()
+
+    if result == QtWidgets.QDialog.Rejected:
+        return
+
+    path = dialog.selectedFiles()[0]
+    print(path)
+    numpy.savetxt(path, grid.array )
 
 
 def new_dialog(window,grid):
@@ -159,12 +199,8 @@ def new_dialog(window,grid):
     else:
         grid.array = numpy.zeros((rows, cols), dtype=numpy.int32)
 
-    # Bludiště může být jinak velké, tak musíme změnit velikost Gridu;
-    # (tento kód používáme i jinde, měli bychom si na to udělat funkci!)
-    size = ltop(rows, cols)
-    grid.setMinimumSize(*size)
-    grid.setMaximumSize(*size)
-    grid.resize(*size)
+    set_grid_size(grid, rows, cols)
+
 
 
 def add_item( palette, img ):
@@ -203,8 +239,17 @@ def main():
     scroll_area = window.findChild(QtWidgets.QScrollArea, 'scrollArea') # alebo aj QtWidgets.Qwidget - dedi
     scroll_area.setWidget( grid )
 
-    action = window.findChild(QtWidgets.QAction, 'actionNew')
-    action.triggered.connect(lambda: new_dialog(window,grid) )
+    action_new = window.findChild(QtWidgets.QAction, 'actionNew')
+    action_new.triggered.connect(lambda: new_dialog(window,grid) )
+
+    action_open = window.findChild(QtWidgets.QAction, 'actionOpen')
+    action_open.triggered.connect(lambda: open_dialog(window,grid) )
+
+
+    action_save = window.findChild(QtWidgets.QAction, 'actionSave')
+    action_save.triggered.connect(lambda: save_dialog(window,grid) )
+
+
 
     palette = window.findChild(QtWidgets.QListWidget, 'palette')
     fill_palette( palette, grid )

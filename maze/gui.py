@@ -4,7 +4,7 @@ import glob
 import os
 from maze import maze_generator, maze_solver
 
-CELL_SIZE = 32
+CELL_SIZE = 16
 
 class image:
     def __init__( self, name, path, num = -1 ):
@@ -22,6 +22,13 @@ LINES = {}
 for item in glob.glob('img/lines/*.svg'):
     name = os.path.splitext( os.path.basename(item) )[0]
     LINES[ name ] = image( name, item)
+
+ARROWS = {}
+for item in glob.glob('img/arrows/*.svg'):
+    name = os.path.splitext( os.path.basename(item) )[0]
+    ARROWS[ name ] = image( name, item)
+
+DIR_TO_NUM = {b'^':0,b'>':1,b'v':2,b'<':3}
 
 VALUE_ROLE = QtCore.Qt.UserRole
 
@@ -42,26 +49,28 @@ class GridWidget(QtWidgets.QWidget):
         self.resize(*size)
 
 
-    def __get_paths(self):
+    def __get_paths(self, solved):
 
-        solved = maze_solver.analyze( self.array )
-        paths = numpy.full( self.array.shape  , b'0000', dtype=('a',4))
+
+        paths = numpy.full( (*self.array.shape,4)  , b'0', dtype=('a',1))
         directions = solved.directions
 
-
-        print(self.array)
         dudes = numpy.argwhere(self.array >= 2)
 
-        print("$$")
-        print(dudes)
-
-
-
         for dude in dudes:
-            path = solved.path( *dude )
-            print(path)
-            for pos in path:
-                paths[ pos ] = b'1111'
+            try:
+                path = solved.path( *dude )
+            except ValueError:
+                continue
+
+            get_in = DIR_TO_NUM[ directions[ path[0] ] ]  #first p doesn't have in, use out instead
+
+            for p in path:
+                paths[ (*p) , get_in ] = b'1'
+                if directions[p] == b'X': break
+                get_out = DIR_TO_NUM[ directions[p] ]
+                paths[ (*p) , get_out ] = b'1'
+                get_in = (get_out + 2 ) % 4   # 0->2, 1->3, 2->0, 3->1
 
         return paths
 
@@ -70,25 +79,16 @@ class GridWidget(QtWidgets.QWidget):
 
         print('paint')
 
-        """rect = event.rect()  # získáme informace o překreslované oblasti
-
-        # zjistíme, jakou oblast naší matice to představuje
-        # nesmíme se přitom dostat z matice ven
-        row_min, col_min = ptol(rect.left(), rect.top())
-        row_min = max(row_min, 0)
-        col_min = max(col_min, 0)
-        row_max, col_max = ptol(rect.right(), rect.bottom())
-        row_max = min(row_max + 1, self.array.shape[0])
-        col_max = min(col_max + 1, self.array.shape[1])
-        """
         row_size, col_size = self.array.shape
 
-        paths = self.__get_paths()
+        solved = maze_solver.analyze( self.array )
+        directions = solved.directions
+
+        paths = self.__get_paths( solved )
 
         painter = QtGui.QPainter(self)  # budeme kreslit
 
-
-        print(paths)
+        paths_view = paths.view('S4')
 
         for row in range(row_size):
             for column in range(col_size):
@@ -103,9 +103,10 @@ class GridWidget(QtWidgets.QWidget):
 
                 IMG['Grass'].svg.render(painter,rect)
 
-
-                if paths[row,column] != b'0000':
-                    LINES[ paths[row,column].decode("utf-8") ].svg.render(painter,rect)
+                if paths_view[row,column][0] != b'0000':
+                    LINES[ paths_view[row,column][0].decode("utf-8") ].svg.render(painter,rect)
+                    if directions[row,column] != b'X':
+                        ARROWS[ str(DIR_TO_NUM[directions[row,column] ])  ].svg.render(painter,rect)
 
                 #TODO - space for more effective approach
                 if self.array[row,column] != 0:
@@ -148,7 +149,7 @@ def new_dialog(window,grid):
         return
 
     # Načtení hodnot ze SpinBoxů
-    cols = dialog.findChild(QtWidgets.QSpinBox, 'widthBox').value()
+    cols = dialog.findChild(QtWidgets.QSpinBox, 'widthBox').value()  #TODO stale to je stvorec!?
     rows = dialog.findChild(QtWidgets.QSpinBox, 'heightBox').value()
     random = dialog.findChild(QtWidgets.QCheckBox, 'randomcheckBox').isChecked()  #TODO QButtonGroup + empty, file
 

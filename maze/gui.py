@@ -164,11 +164,29 @@ class GridWidget(QtWidgets.QWidget):
 
 class Gui():
 
-    def open_dialog(window, grid):
+    def __init__(self):
+        self.app = QtWidgets.QApplication([])
+        self.window = QtWidgets.QMainWindow()
+        with open ('GUI/mainwindow.ui') as f:
+            uic.loadUi(f,self.window)
 
-        dialog = QtWidgets.QFileDialog(window)
-        with open ('GUI/openmaze.ui') as f:
-            uic.loadUi(f,dialog)
+        array = numpy.zeros((10,13), dtype=numpy.int8 )
+        self.grid = GridWidget(array)
+
+        scroll_area = self.window.findChild(QtWidgets.QScrollArea, 'scrollArea') # alebo aj QtWidgets.Qwidget - dedi
+        scroll_area.setWidget( self.grid )
+
+        self.window.findChild(QtWidgets.QAction, 'actionNew').triggered.connect( self._new_dialog )
+        self.window.findChild(QtWidgets.QAction, 'actionOpen').triggered.connect( self._open_dialog )
+        self.window.findChild(QtWidgets.QAction, 'actionSave').triggered.connect( self._save_dialog )
+        self.window.findChild(QtWidgets.QAction, 'actionAbout').triggered.connect( self._about_dialog )
+
+        palette = self.window.findChild(QtWidgets.QListWidget, 'palette')
+        self._fill_palette( palette, self.grid )
+
+    def _open_dialog(self):
+
+        dialog = QtWidgets.QFileDialog(self.window)
         result = dialog.exec()
 
         if result == QtWidgets.QDialog.Rejected:
@@ -176,27 +194,27 @@ class Gui():
 
         path = dialog.selectedFiles()[0]
         try:
-            grid.array = numpy.loadtxt(path, dtype=numpy.int32)
+            self.grid.array = numpy.loadtxt(path, dtype=numpy.int32)
 
         except OSError as e:
-            alert_dialog(window, True, 'Error', 'File not found!', str(e), QtWidgets.QMessageBox.Warning )
+            self._alert_dialog( True, 'Error', 'File not found!', str(e), QtWidgets.QMessageBox.Warning )
             return
         except ValueError as e:
-            alert_dialog(window, True, 'Error', 'Corrupted file!', str(e), QtWidgets.QMessageBox.Warning )
+            self._alert_dialog( True, 'Error', 'Corrupted file!', str(e), QtWidgets.QMessageBox.Warning )
             return
         except IOError as e:
-            alert_dialog(window, True, 'Error', 'Permission denied!', str(e), QtWidgets.QMessageBox.Warning )
+            self._alert_dialog( True, 'Error', 'Permission denied!', str(e), QtWidgets.QMessageBox.Warning )
             return
         except BaseException as e:
-            alert_dialog(window, True, 'Weird Error', path , str(e), QtWidgets.QMessageBox.Warning )
+            self._alert_dialog( True, 'Weird Error', path , str(e), QtWidgets.QMessageBox.Warning )
             return
 
-        grid.set_grid_size()
-        grid.update()
+        self.grid.set_grid_size()
+        self.grid.update()
 
-    def alert_dialog(window, modal, title, text, detail, icon):
+    def _alert_dialog(self, modal, title, text, detail, icon):
 
-        dialog = QtWidgets.QMessageBox(window)
+        dialog = QtWidgets.QMessageBox(self.window)
 
         dialog.setWindowTitle(title)
         dialog.setText(text)
@@ -211,14 +229,14 @@ class Gui():
             dialog.show()
 
 
-    def about_dialog(window):
+    def _about_dialog( self ):
 
         html = publish_parts(__doc__, writer_name='html')['html_body']
-        alert_dialog(window, False, 'About', html , '', QtWidgets.QMessageBox.Information )
+        self._alert_dialog( False, 'About', html , '', QtWidgets.QMessageBox.Information )
 
-    def save_dialog(window, grid):
+    def _save_dialog(self):
 
-        dialog = QtWidgets.QFileDialog(window)
+        dialog = QtWidgets.QFileDialog(self.window)
         result = dialog.exec()
 
         if result == QtWidgets.QDialog.Rejected:
@@ -226,13 +244,13 @@ class Gui():
 
         path = dialog.selectedFiles()[0]
 
-        numpy.savetxt(path, grid.array )
+        numpy.savetxt(path, self.grid.array )
 
 
 
-    def new_dialog(window,grid):
+    def _new_dialog(self):
 
-        dialog = QtWidgets.QDialog(window)
+        dialog = QtWidgets.QDialog(self.window)
         with open ('GUI/newmaze.ui') as f:
             uic.loadUi(f,dialog)
         result = dialog.exec()
@@ -242,22 +260,22 @@ class Gui():
             return
 
         # Načtení hodnot ze SpinBoxů
-        cols = dialog.findChild(QtWidgets.QSpinBox, 'widthBox').value()  #TODO stale to je stvorec!?
+        cols = dialog.findChild(QtWidgets.QSpinBox, 'widthBox').value()
         rows = dialog.findChild(QtWidgets.QSpinBox, 'heightBox').value()
         random = dialog.findChild(QtWidgets.QCheckBox, 'randomcheckBox').isChecked()  #TODO QButtonGroup + empty, file
 
         # Vytvoření nového bludiště
         if random:
-            grid.array = maze_generator.generate_maze( cols, rows )
+            self.grid.array = maze_generator.generate_maze( cols, rows )
         else:
-            grid.array = numpy.zeros((rows, cols), dtype=numpy.int32)
+            self.grid.array = numpy.zeros((rows, cols), dtype=numpy.int32)
 
 
-        grid.set_grid_size()
+        self.grid.set_grid_size()
 
-        grid.update() #TODO --when big resolution update only currently visible field
+        self.grid.update() #TODO --when big resolution update only currently visible field
 
-    def add_item( palette, img ):
+    def _add_item( self, palette, img ):
 
         item = QtWidgets.QListWidgetItem( img.name )
         icon = QtGui.QIcon( img.path )
@@ -265,11 +283,11 @@ class Gui():
         palette.addItem(item)
         item.setData( VALUE_ROLE, img.num )
 
-    def fill_palette( palette, grid ):
+    def _fill_palette( self, palette, grid ):
 
 
         for img in sorted(IMG.values(), key=lambda x: x.num ):
-            add_item( palette, img )
+            self._add_item( palette, img )
 
         def item_activated( ):
             for item in palette.selectedItems():
@@ -280,38 +298,13 @@ class Gui():
         palette.setCurrentRow(1)
 
 
-
+    def run(self):
+        self.window.show()
+        return self.app.exec_()
 
 def main():
-    app = QtWidgets.QApplication([])
-    window = QtWidgets.QMainWindow()
-    with open ('GUI/mainwindow.ui') as f:
-        uic.loadUi(f,window)
 
-        #TODO generator generuje len liche/sude
-    array = numpy.zeros((10,13), dtype=numpy.int8 )
-    grid = GridWidget(array)
+    gui = Gui()
+    return gui.run()
 
-    scroll_area = window.findChild(QtWidgets.QScrollArea, 'scrollArea') # alebo aj QtWidgets.Qwidget - dedi
-    scroll_area.setWidget( grid )
-
-    action_new = window.findChild(QtWidgets.QAction, 'actionNew')
-    action_new.triggered.connect(lambda: new_dialog(window,grid) )
-
-    action_open = window.findChild(QtWidgets.QAction, 'actionOpen')
-    action_open.triggered.connect(lambda: open_dialog(window,grid) )
-
-    action_save = window.findChild(QtWidgets.QAction, 'actionSave')
-    action_save.triggered.connect(lambda: save_dialog(window,grid) )
-
-    action_about = window.findChild(QtWidgets.QAction, 'actionAbout')
-    action_about.triggered.connect(lambda: about_dialog(window) )
-
-
-
-    palette = window.findChild(QtWidgets.QListWidget, 'palette')
-    fill_palette( palette, grid )
-
-    window.show()
-    return app.exec()
 

@@ -58,26 +58,26 @@ DIR_TO_NUM = {b'^':0,b'>':1,b'v':2,b'<':3}
 
 VALUE_ROLE = QtCore.Qt.UserRole
 
-def ptol(x,y):
-    return y // CELL_SIZE, x // CELL_SIZE
-def ltop(row,column):
-    return column * CELL_SIZE , row * CELL_SIZE
-
-
-
 
 class GridWidget(QtWidgets.QWidget):
 
     def __init__(self, array):
 
         super().__init__()
+        self.cell_size = CELL_SIZE
         self.array = array
         self.set_grid_size()
+
+    def _ptol(self,x,y):
+        return y // self.cell_size, x // self.cell_size
+
+    def _ltop(self, row,column):
+        return column * self.cell_size , row * self.cell_size
 
     def set_grid_size(self):
         # Bludiště může být jinak velké, tak musíme změnit velikost Gridu;
         rows, cols = self.array.shape
-        size = ltop(rows, cols)
+        size = self._ltop(rows, cols)
         self.setMinimumSize(*size)
         self.setMaximumSize(*size)
         self.resize(*size)
@@ -112,6 +112,7 @@ class GridWidget(QtWidgets.QWidget):
 
         row_size, col_size = self.array.shape
 
+
         solved = maze_solver.analyze( self.array )
         directions = solved.directions
 
@@ -124,8 +125,8 @@ class GridWidget(QtWidgets.QWidget):
         for row in range(row_size):
             for column in range(col_size):
                 # získáme čtvereček, který budeme vybarvovat
-                x, y = ltop(row, column)
-                rect = QtCore.QRectF(x, y, CELL_SIZE, CELL_SIZE)
+                x, y = self._ltop(row, column)
+                rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
 
                 color = QtGui.QColor(255, 255, 255)
 
@@ -144,10 +145,24 @@ class GridWidget(QtWidgets.QWidget):
                     for img in IMG.values():
                         if self.array[row, column] == img.num:
                             img.svg.render(painter,rect)
+        self.set_grid_size()
+
+    def wheelEvent(self, event):
+
+        if event.modifiers() == QtCore.Qt.ControlModifier:
+            degrees = event.angleDelta().y() / 8
+            self.cell_size += round(self.cell_size*degrees/100)
+            event.accept()
+        else:
+            event.ignore()
+
+        self.update()
+
+
 
     def mousePressEvent(self, event):
 
-        row, column = ptol( event.x() , event.y() )
+        row, column = self._ptol( event.x() , event.y() )
 
         shape = self.array.shape
 
@@ -160,6 +175,7 @@ class GridWidget(QtWidgets.QWidget):
                 return
 
             self.update()
+
 
 
 class Gui():
@@ -236,16 +252,15 @@ class Gui():
 
     def _save_dialog(self):
 
-        dialog = QtWidgets.QFileDialog(self.window)
-        result = dialog.exec()
+        path, _ = QtWidgets.QFileDialog.getSaveFileName(self.window)
 
-        if result == QtWidgets.QDialog.Rejected:
+        if not path:
             return
-
-        path = dialog.selectedFiles()[0]
-
-        numpy.savetxt(path, self.grid.array )
-
+        try:
+            numpy.savetxt(path, self.grid.array )
+        except BaseException as e:
+            self._alert_dialog( True, 'Save Error', path , str(e), QtWidgets.QMessageBox.Warning )
+            return
 
 
     def _new_dialog(self):

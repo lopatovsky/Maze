@@ -1,8 +1,34 @@
+"""
+Dude's Maze
+
+The maze creator, generator and solver.
+Choose your dude and let find his way towards the castle!
+
+| Copyright © 2016 Lukáš Lopatovský
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+source: https://github.com/lopatovsky/Maze
+All the graphic come from: http://opengameart.org/users/kenney
+"""
+
 from PyQt5 import QtWidgets, uic, QtGui, QtCore, QtSvg
 import numpy
 import glob
 import os
-from maze import maze_generator, maze_solver
+from docutils.core import publish_parts
+from . import maze_generator, maze_solver
 
 CELL_SIZE = 24
 
@@ -55,7 +81,6 @@ class GridWidget(QtWidgets.QWidget):
         self.setMinimumSize(*size)
         self.setMaximumSize(*size)
         self.resize(*size)
-
 
     def __get_paths(self, solved):
 
@@ -120,7 +145,6 @@ class GridWidget(QtWidgets.QWidget):
                         if self.array[row, column] == img.num:
                             img.svg.render(painter,rect)
 
-
     def mousePressEvent(self, event):
 
         row, column = ptol( event.x() , event.y() )
@@ -138,130 +162,124 @@ class GridWidget(QtWidgets.QWidget):
             self.update()
 
 
+class Gui():
 
+    def open_dialog(window, grid):
 
-def open_dialog(window, grid):
-
-    dialog = QtWidgets.QFileDialog(window)
-    with open ('GUI/openmaze.ui') as f:
-        uic.loadUi(f,dialog)
-    result = dialog.exec()
-
-    if result == QtWidgets.QDialog.Rejected:
-        return
-
-    path = dialog.selectedFiles()[0]
-    try:
-        grid.array = numpy.loadtxt(path, dtype=numpy.int32)
-
-    except BaseException as e:
-        alert_dialog(window, True, 'Error', path , str(e), QtWidgets.QMessageBox.Warning )
-        return
-
-    '''except OSError as e:
-        alert_dialog(window, True, 'Error', 'File not found!', str(e), QtWidgets.QMessageBox.Warning )
-        return
-    except ValueError as e:
-        alert_dialog(window, True, 'Error', 'Corrupted file!', str(e), QtWidgets.QMessageBox.Warning )
-        return
-    except IOError as e:
-        alert_dialog(window, True, 'Error', 'Permission denied!', str(e), QtWidgets.QMessageBox.Warning )
-        return
-    '''
-
-    grid.set_grid_size()
-    grid.update()
-
-def alert_dialog(window, modal, title, text, detail, icon):
-
-    dialog = QtWidgets.QMessageBox(window)
-    with open ('GUI/openmaze.ui') as f:
-        uic.loadUi(f,dialog)
-
-    dialog.setWindowTitle(title)
-    dialog.setText(text)
-    if detail != '': dialog.setDetailedText(detail)
-    dialog.setIcon(icon)
-    if modal:
+        dialog = QtWidgets.QFileDialog(window)
+        with open ('GUI/openmaze.ui') as f:
+            uic.loadUi(f,dialog)
         result = dialog.exec()
 
         if result == QtWidgets.QDialog.Rejected:
             return
-    else:
-        dialog.show()
+
+        path = dialog.selectedFiles()[0]
+        try:
+            grid.array = numpy.loadtxt(path, dtype=numpy.int32)
+
+        except OSError as e:
+            alert_dialog(window, True, 'Error', 'File not found!', str(e), QtWidgets.QMessageBox.Warning )
+            return
+        except ValueError as e:
+            alert_dialog(window, True, 'Error', 'Corrupted file!', str(e), QtWidgets.QMessageBox.Warning )
+            return
+        except IOError as e:
+            alert_dialog(window, True, 'Error', 'Permission denied!', str(e), QtWidgets.QMessageBox.Warning )
+            return
+        except BaseException as e:
+            alert_dialog(window, True, 'Weird Error', path , str(e), QtWidgets.QMessageBox.Warning )
+            return
+
+        grid.set_grid_size()
+        grid.update()
+
+    def alert_dialog(window, modal, title, text, detail, icon):
+
+        dialog = QtWidgets.QMessageBox(window)
+
+        dialog.setWindowTitle(title)
+        dialog.setText(text)
+        if detail != '': dialog.setDetailedText(detail)
+        dialog.setIcon(icon)
+        if modal:
+            result = dialog.exec()
+
+            if result == QtWidgets.QDialog.Rejected:
+                return
+        else:
+            dialog.show()
 
 
-def about_dialog(window):
+    def about_dialog(window):
 
-    html = '<h1>Dude\'s Maze</h1><p>The maze creator, generator and solver. Choose your dude and let find his way towards the castle!</p><hr/><p>by Lukáš Lopatovský , source: <a href="https://github.com/lopatovsky/Maze">GitHub</a></p><p>GPL license</p> <p>All the graphic come from: <a href="http://opengameart.org/users/kenney">OpenGameArt.org.</a></p>'
-    alert_dialog(window, False, 'About', html , '', QtWidgets.QMessageBox.Information )
+        html = publish_parts(__doc__, writer_name='html')['html_body']
+        alert_dialog(window, False, 'About', html , '', QtWidgets.QMessageBox.Information )
 
-def save_dialog(window, grid):
+    def save_dialog(window, grid):
 
-    dialog = QtWidgets.QFileDialog(window)
-    with open ('GUI/openmaze.ui') as f:
-        uic.loadUi(f,dialog)
-    result = dialog.exec()
+        dialog = QtWidgets.QFileDialog(window)
+        result = dialog.exec()
 
-    if result == QtWidgets.QDialog.Rejected:
-        return
+        if result == QtWidgets.QDialog.Rejected:
+            return
 
-    path = dialog.selectedFiles()[0]
+        path = dialog.selectedFiles()[0]
 
-    numpy.savetxt(path, grid.array )
+        numpy.savetxt(path, grid.array )
 
 
 
-def new_dialog(window,grid):
+    def new_dialog(window,grid):
 
-    dialog = QtWidgets.QDialog(window)
-    with open ('GUI/newmaze.ui') as f:
-        uic.loadUi(f,dialog)
-    result = dialog.exec()
+        dialog = QtWidgets.QDialog(window)
+        with open ('GUI/newmaze.ui') as f:
+            uic.loadUi(f,dialog)
+        result = dialog.exec()
 
-    if result == QtWidgets.QDialog.Rejected:
-        # Dialog uživatel zavřel nebo klikl na Cancel
-        return
+        if result == QtWidgets.QDialog.Rejected:
+            # Dialog uživatel zavřel nebo klikl na Cancel
+            return
 
-    # Načtení hodnot ze SpinBoxů
-    cols = dialog.findChild(QtWidgets.QSpinBox, 'widthBox').value()  #TODO stale to je stvorec!?
-    rows = dialog.findChild(QtWidgets.QSpinBox, 'heightBox').value()
-    random = dialog.findChild(QtWidgets.QCheckBox, 'randomcheckBox').isChecked()  #TODO QButtonGroup + empty, file
+        # Načtení hodnot ze SpinBoxů
+        cols = dialog.findChild(QtWidgets.QSpinBox, 'widthBox').value()  #TODO stale to je stvorec!?
+        rows = dialog.findChild(QtWidgets.QSpinBox, 'heightBox').value()
+        random = dialog.findChild(QtWidgets.QCheckBox, 'randomcheckBox').isChecked()  #TODO QButtonGroup + empty, file
 
-    # Vytvoření nového bludiště
-    if random:
-        grid.array = maze_generator.generate_maze( cols, rows )
-    else:
-        grid.array = numpy.zeros((rows, cols), dtype=numpy.int32)
-
-
-    grid.set_grid_size()
-
-    grid.update() #TODO --when big resolution update only currently visible field
+        # Vytvoření nového bludiště
+        if random:
+            grid.array = maze_generator.generate_maze( cols, rows )
+        else:
+            grid.array = numpy.zeros((rows, cols), dtype=numpy.int32)
 
 
+        grid.set_grid_size()
 
-def add_item( palette, img ):
+        grid.update() #TODO --when big resolution update only currently visible field
 
-    item = QtWidgets.QListWidgetItem( img.name )
-    icon = QtGui.QIcon( img.path )
-    item.setIcon( icon )
-    palette.addItem(item)
-    item.setData( VALUE_ROLE, img.num )
+    def add_item( palette, img ):
 
-def fill_palette( palette, grid ):
+        item = QtWidgets.QListWidgetItem( img.name )
+        icon = QtGui.QIcon( img.path )
+        item.setIcon( icon )
+        palette.addItem(item)
+        item.setData( VALUE_ROLE, img.num )
+
+    def fill_palette( palette, grid ):
 
 
-    for img in sorted(IMG.values(), key=lambda x: x.num ):
-        add_item( palette, img )
+        for img in sorted(IMG.values(), key=lambda x: x.num ):
+            add_item( palette, img )
 
-    def item_activated( ):
-        for item in palette.selectedItems():
-            grid.selected = item.data(VALUE_ROLE)
-            #row_num = palette.indexFromItem(item).row()
+        def item_activated( ):
+            for item in palette.selectedItems():
+                grid.selected = item.data(VALUE_ROLE)
+                #row_num = palette.indexFromItem(item).row()
 
-    palette.itemSelectionChanged.connect(item_activated )
-    palette.setCurrentRow(1)
+        palette.itemSelectionChanged.connect(item_activated )
+        palette.setCurrentRow(1)
+
+
 
 
 def main():

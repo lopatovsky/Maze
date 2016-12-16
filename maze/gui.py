@@ -153,12 +153,21 @@ def open_dialog(window, grid):
     path = dialog.selectedFiles()[0]
     try:
         grid.array = numpy.loadtxt(path, dtype=numpy.int32)
-    except OSError as e:
+
+    except BaseException as e:
+        alert_dialog(window, True, 'Error', path , str(e), QtWidgets.QMessageBox.Warning )
+        return
+
+    '''except OSError as e:
         alert_dialog(window, True, 'Error', 'File not found!', str(e), QtWidgets.QMessageBox.Warning )
         return
     except ValueError as e:
         alert_dialog(window, True, 'Error', 'Corrupted file!', str(e), QtWidgets.QMessageBox.Warning )
         return
+    except IOError as e:
+        alert_dialog(window, True, 'Error', 'Permission denied!', str(e), QtWidgets.QMessageBox.Warning )
+        return
+    '''
 
     grid.set_grid_size()
     grid.update()

@@ -192,16 +192,19 @@ class Gui():
         scroll_area = self.window.findChild(QtWidgets.QScrollArea, 'scrollArea') # alebo aj QtWidgets.Qwidget - dedi
         scroll_area.setWidget( self.grid )
 
-        self.window.findChild(QtWidgets.QAction, 'actionNew').triggered.connect( self._new_dialog )
-        self.window.findChild(QtWidgets.QAction, 'actionOpen').triggered.connect( self._open_dialog )
-        self.window.findChild(QtWidgets.QAction, 'actionSave').triggered.connect( self._save_dialog )
-        self.window.findChild(QtWidgets.QAction, 'actionAbout').triggered.connect( self._about_dialog )
+        self._action( 'actionNew').triggered.connect( self._new_dialog )
+        self._action( 'actionOpen').triggered.connect( self._open_dialog )
+        self._action( 'actionSave').triggered.connect( self._save_dialog )
+        self._action( 'actionAbout').triggered.connect( self._about_dialog )
 
         palette = self.window.findChild(QtWidgets.QListWidget, 'palette')
         self._fill_palette( palette, self.grid )
 
-        play_action = self.window.findChild(QtWidgets.QAction,'actionPlay')
+        play_action = self._action('actionPlay')
         play_action.triggered.connect( lambda: self._play( play_action ) )
+
+    def _action( self, action_name ):
+        return self.window.findChild(QtWidgets.QAction, action_name )
 
     def _open_dialog(self):
 

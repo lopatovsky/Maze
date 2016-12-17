@@ -33,7 +33,7 @@ from . import maze_generator, maze_solver
 CELL_SIZE = 24
 
 class image:
-    def __init__( self, name, path, num = -1 ):
+    def __init__( self, name, path, num = -3 ):
         self.name = name
         self.path = path
         self.num = num
@@ -67,6 +67,7 @@ class GridWidget(QtWidgets.QWidget):
         self.cell_size = CELL_SIZE
         self.array = array
         self.set_grid_size()
+        self.play_mode = False;
 
     def _ptol(self,x,y):
         return y // self.cell_size, x // self.cell_size
@@ -133,12 +134,15 @@ class GridWidget(QtWidgets.QWidget):
                 # vyplníme čtvereček barvou
                 painter.fillRect(rect, QtGui.QBrush(color))
 
+                #if self.play_mode:
                 IMG['Grass'].svg.render(painter,rect)
 
-                if paths_view[row,column][0] != b'0000':
-                    LINES[ paths_view[row,column][0].decode("utf-8") ].svg.render(painter,rect)
-                    if directions[row,column] != b'X':
-                        ARROWS[ str(DIR_TO_NUM[directions[row,column] ])  ].svg.render(painter,rect)
+                if not self.play_mode:
+
+                    if paths_view[row,column][0] != b'0000':
+                        LINES[ paths_view[row,column][0].decode("utf-8") ].svg.render(painter,rect)
+                        if directions[row,column] != b'X':
+                            ARROWS[ str(DIR_TO_NUM[directions[row,column] ])  ].svg.render(painter,rect)
 
                 #TODO - space for more effective approach
                 if self.array[row,column] != 0:
@@ -168,9 +172,11 @@ class GridWidget(QtWidgets.QWidget):
 
         if 0 <= row < shape[0] and 0 <= column < shape[1]:
             if event.button() == QtCore.Qt.LeftButton:
-                self.array[row,column] = self.selected
+                if not self.play_mode or self.array[row,column] == 0:
+                    self.array[row,column] = self.selected
             elif event.button() == QtCore.Qt.RightButton:
-                self.array[row,column] = 0
+                if not self.play_mode or self.array[row,column] == -1:
+                    self.array[row,column] = 0
             else:
                 return
 
@@ -197,14 +203,18 @@ class Gui():
         self._action( 'actionSave').triggered.connect( self._save_dialog )
         self._action( 'actionAbout').triggered.connect( self._about_dialog )
 
-        palette = self.window.findChild(QtWidgets.QListWidget, 'palette')
-        self._fill_palette( palette, self.grid )
+        self._add_palette()
+
 
         play_action = self._action('actionPlay')
         play_action.triggered.connect( lambda: self._play( play_action ) )
 
     def _action( self, action_name ):
         return self.window.findChild(QtWidgets.QAction, action_name )
+
+    def _add_palette( self ):
+        self.palette = self.window.findChild(QtWidgets.QListWidget, 'palette')
+        self._fill_palette( )
 
     def _open_dialog(self):
 
@@ -235,7 +245,16 @@ class Gui():
         self.grid.update()
 
     def _play(self, action):
-        print(action.isChecked() )
+        isChecked = action.isChecked()
+        self.grid.play_mode = isChecked
+        self.grid.update()
+
+        if isChecked:
+            self.grid.selected = -1
+            self.palette.hide()
+        else:
+            self.palette.show()
+
 
     def _alert_dialog(self, modal, title, text, detail, icon):
 
@@ -252,7 +271,6 @@ class Gui():
                 return
         else:
             dialog.show()
-
 
     def _about_dialog( self ):
 
@@ -307,19 +325,19 @@ class Gui():
         palette.addItem(item)
         item.setData( VALUE_ROLE, img.num )
 
-    def _fill_palette( self, palette, grid ):
+    def _fill_palette( self ):
 
 
         for img in sorted(IMG.values(), key=lambda x: x.num ):
-            self._add_item( palette, img )
+            self._add_item( self.palette, img )
 
         def item_activated( ):
-            for item in palette.selectedItems():
-                grid.selected = item.data(VALUE_ROLE)
+            for item in self.palette.selectedItems():
+                self.grid.selected = item.data(VALUE_ROLE)
                 #row_num = palette.indexFromItem(item).row()
 
-        palette.itemSelectionChanged.connect(item_activated )
-        palette.setCurrentRow(1)
+        self.palette.itemSelectionChanged.connect(item_activated )
+        self.palette.setCurrentRow(1)
 
 
     def run(self):

@@ -200,6 +200,9 @@ class Gui():
         palette = self.window.findChild(QtWidgets.QListWidget, 'palette')
         self._fill_palette( palette, self.grid )
 
+        play_action = self.window.findChild(QtWidgets.QAction,'actionPlay')
+        play_action.triggered.connect( lambda: self._play( play_action ) )
+
     def _open_dialog(self):
 
         dialog = QtWidgets.QFileDialog(self.window)
@@ -227,6 +230,9 @@ class Gui():
 
         self.grid.set_grid_size()
         self.grid.update()
+
+    def _play(self, action):
+        print(action.isChecked() )
 
     def _alert_dialog(self, modal, title, text, detail, icon):
 

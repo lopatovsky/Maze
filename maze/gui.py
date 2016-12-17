@@ -22,7 +22,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 source: https://github.com/lopatovsky/Maze
 All the graphic come from: http://opengameart.org/users/kenney
 """
-
+import asyncio
+from quamash import QEventLoop
 from PyQt5 import QtWidgets, uic, QtGui, QtCore, QtSvg
 import numpy
 import glob
@@ -187,7 +188,12 @@ class GridWidget(QtWidgets.QWidget):
 class Gui():
 
     def __init__(self):
+
         self.app = QtWidgets.QApplication([])
+        self.loop = QEventLoop(self.app)
+        asyncio.set_event_loop(self.loop)
+
+
         self.window = QtWidgets.QMainWindow()
         with open ('GUI/mainwindow.ui') as f:
             uic.loadUi(f,self.window)
@@ -206,8 +212,13 @@ class Gui():
         self._add_palette()
 
 
-        play_action = self._action('actionPlay')
-        play_action.triggered.connect( lambda: self._play( play_action ) )
+        self.play_action = self._action('actionPlay')
+        self.play_action.triggered.connect( self._play )
+
+
+        self.toolbar = self.window.findChild(QtWidgets.QToolBar, 'toolBar')
+
+
 
     def _action( self, action_name ):
         return self.window.findChild(QtWidgets.QAction, action_name )
@@ -244,16 +255,27 @@ class Gui():
         self.grid.set_grid_size()
         self.grid.update()
 
-    def _play(self, action):
-        isChecked = action.isChecked()
+    async def _update_time(self):
+            value = 0
+            while True:
+                self.display.display(value)
+                await asyncio.sleep(1)
+                value += 1
+
+    def _play(self):
+        isChecked = self.play_action.isChecked()
         self.grid.play_mode = isChecked
         self.grid.update()
 
         if isChecked:
             self.grid.selected = -1
             self.palette.hide()
+            self.display = QtWidgets.QLCDNumber()
+            self.toolbar.addWidget( self.display )
+            asyncio.ensure_future(self._update_time())
         else:
             self.palette.show()
+            #self.display.hide()
 
 
     def _alert_dialog(self, modal, title, text, detail, icon):
@@ -342,7 +364,7 @@ class Gui():
 
     def run(self):
         self.window.show()
-        return self.app.exec_()
+        return self.loop.run_forever()
 
 def main():
 

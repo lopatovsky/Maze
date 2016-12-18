@@ -69,6 +69,7 @@ class GridWidget(QtWidgets.QWidget):
         self.array = array
         self.set_grid_size()
         self.play_mode = False;
+        self._solve()
 
     def _ptol(self,x,y):
         return y // self.cell_size, x // self.cell_size
@@ -83,6 +84,17 @@ class GridWidget(QtWidgets.QWidget):
         self.setMinimumSize(*size)
         self.setMaximumSize(*size)
         self.resize(*size)
+
+
+    def _solve(self):
+        self.solved = maze_solver.analyze( self.array )
+        self.directions = self.solved.directions
+
+
+    def change_maze(self):
+        self.set_grid_size()
+        self._solve()
+        self.update()
 
     def __get_paths(self):
 
@@ -161,10 +173,6 @@ class GridWidget(QtWidgets.QWidget):
 
         row_size, col_size = self.array.shape
 
-        #todo move
-        self.solved = maze_solver.analyze( self.array )
-        self.directions = self.solved.directions
-
         if not self.play_mode:
             paths = self.__get_paths( )
             paths_view = paths.view('S4')
@@ -232,7 +240,10 @@ class GridWidget(QtWidgets.QWidget):
             else:
                 return
 
-            self.update()
+        #todo only if changed
+        self._solve()
+
+        self.update()
 
 
 
@@ -303,8 +314,7 @@ class Gui():
             self._alert_dialog( True, 'Weird Error', path , str(e), QtWidgets.QMessageBox.Warning )
             return
 
-        self.grid.set_grid_size()
-        self.grid.update()
+        self.grid.change_maze()
 
     async def _update_time(self):
             value = 0

@@ -29,7 +29,7 @@ import numpy
 import glob
 import os
 from docutils.core import publish_parts
-from . import maze_generator, maze_solver
+from . import maze_generator, maze_solver, actor
 
 CELL_SIZE = 24
 
@@ -69,6 +69,7 @@ class GridWidget(QtWidgets.QWidget):
         self.array = array
         self.set_grid_size()
         self.play_mode = False;
+        self.dudes = {}
 
     def _ptol(self,x,y):
         return y // self.cell_size, x // self.cell_size
@@ -88,7 +89,6 @@ class GridWidget(QtWidgets.QWidget):
 
 
         paths = numpy.full( (*self.array.shape,4)  , b'0', dtype=('a',1))
-        directions = solved.directions
 
         dudes = numpy.argwhere(self.array >= 2)
 
@@ -98,17 +98,36 @@ class GridWidget(QtWidgets.QWidget):
             except ValueError:
                 continue
 
-            get_in = DIR_TO_NUM[ directions[ path[0] ] ]  #first p doesn't have in, use out instead
+            get_in = DIR_TO_NUM[ self.directions[ path[0] ] ]  #first p doesn't have in, use out instead
 
             for p in path:
                 #if paths[ (*p) , get_in ] == b'1': break #optimization for too many dudes
                 paths[ (*p) , get_in ] = b'1'
-                if directions[p] == b'X': break
-                get_out = DIR_TO_NUM[ directions[p] ]
+                if self.directions[p] == b'X': break
+                get_out = DIR_TO_NUM[ self.directions[p] ]
                 paths[ (*p) , get_out ] = b'1'
                 get_in = (get_out + 2 ) % 4   # 0->2, 1->3, 2->0, 3->1
 
         return paths
+
+    def update_actor( self, actor ):
+        dude = self.dudes[ (actor.row, actor.column) ]
+        pass
+
+    def _animate_dude( self, point ):
+
+        if point not in self.dudes:
+            self.dudes[point] = actor.Actor(self, *point, self.array[point] )
+        elif not self.dudes[point].kind == self.array[point]:
+            self.dudes[point] = actor.Actor(self, *point, self.array[point]  )
+        else:
+            pass
+
+        print(point)
+        print( self.dudes[point].kind )
+
+
+
 
     def paintEvent(self, event):
 
@@ -116,7 +135,7 @@ class GridWidget(QtWidgets.QWidget):
 
 
         solved = maze_solver.analyze( self.array )
-        directions = solved.directions
+        self.directions = solved.directions
 
         paths = self.__get_paths( solved )
 
@@ -142,14 +161,17 @@ class GridWidget(QtWidgets.QWidget):
 
                     if paths_view[row,column][0] != b'0000':
                         LINES[ paths_view[row,column][0].decode("utf-8") ].svg.render(painter,rect)
-                        if directions[row,column] != b'X':
-                            ARROWS[ str(DIR_TO_NUM[directions[row,column] ])  ].svg.render(painter,rect)
+                        if self.directions[row,column] != b'X':
+                            ARROWS[ str(DIR_TO_NUM[self.directions[row,column] ])  ].svg.render(painter,rect)
 
                 #TODO - space for more effective approach
                 if self.array[row,column] != 0:
                     for img in IMG.values():
                         if self.array[row, column] == img.num:
-                            img.svg.render(painter,rect)
+                            if self.play_mode and img.num >= 2:
+                                self._animate_dude( (row,column) )
+                            else:
+                                img.svg.render(painter,rect)
         self.set_grid_size()
 
     def wheelEvent(self, event):
@@ -162,8 +184,6 @@ class GridWidget(QtWidgets.QWidget):
             event.ignore()
 
         self.update()
-
-
 
     def mousePressEvent(self, event):
 

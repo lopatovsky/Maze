@@ -84,7 +84,7 @@ class GridWidget(QtWidgets.QWidget):
         self.setMaximumSize(*size)
         self.resize(*size)
 
-    def __get_paths(self, solved):
+    def __get_paths(self):
 
 
         paths = numpy.full( (*self.array.shape,4)  , b'0', dtype=('a',1))
@@ -93,7 +93,7 @@ class GridWidget(QtWidgets.QWidget):
 
         for dude in dudes:
             try:
-                path = solved.path( *dude )
+                path = self.solved.path( *dude )
             except ValueError:
                 continue
 
@@ -111,39 +111,13 @@ class GridWidget(QtWidgets.QWidget):
 
     def update_actor( self, actor ):
 
+
         x, y = self._ltop(actor.row, actor.column)
-        rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
-
-        print(x,y,self.cell_size, self.cell_size)
-
-        painter = QtGui.QPainter(self)
-        color = QtGui.QColor(255, 255, 255)
-
-        # vyplníme čtvereček barvou
-        painter.fillRect(rect, QtGui.QBrush(color))
-
-
-        IMG[ 'Dude1' ].svg.render(painter,rect)
+        rect = QtCore.QRect(x, y, int(self.cell_size), int(self.cell_size) )
+        self.update(rect)
 
 
 
-        self.update() # TODO!!!! localizuj
-        pass
-
-
-    """def _animate_dude( self, point ):
-
-        if point not in self.dudes:
-            self.dudes[point] = actor.Actor(self, *point, self.array[point] )
-        elif not self.dudes[point].kind == self.array[point]:
-            self.dudes[point] = actor.Actor(self, *point, self.array[point]  )
-        else:
-            pass
-
-        print(point)
-        print( self.dudes[point].kind )
-
-    """
 
     def init_dudes( self ):
         print("Game is startin'")
@@ -159,26 +133,46 @@ class GridWidget(QtWidgets.QWidget):
                     asyncio.ensure_future( dude.behavior() )  #TODO: look how MI-PYT solved asyncio calling from init in actor class
                     self.dudes.append( dude )
 
-    def _repaint_dudes( self ):
-        pass
+
+    def _repaint_dudes( self, painter ):
+
+        for dude in self.dudes:
+
+            x, y = self._ltop(dude.row, dude.column)
+            rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
+
+            #print(x,y,self.cell_size, self.cell_size)
+            IMG[ 'Dude1' ].svg.render(painter,rect)
+
 
 
     def paintEvent(self, event):
 
+
+        rect = event.rect()
+        row_min, col_min = self._ptol(rect.left(), rect.top())
+        row_min = max(row_min, 0)
+        col_min = max(col_min, 0)
+        row_max, col_max = self._ptol(rect.right(),rect.bottom())
+        row_max = min(row_max + 1, self.array.shape[0])
+        col_max = min(col_max + 1, self.array.shape[1])
+
+
+
         row_size, col_size = self.array.shape
 
+        #todo move
+        self.solved = maze_solver.analyze( self.array )
+        self.directions = self.solved.directions
 
-        solved = maze_solver.analyze( self.array )
-        self.directions = solved.directions
+        if not self.play_mode:
+            paths = self.__get_paths( )
+            paths_view = paths.view('S4')
 
-        paths = self.__get_paths( solved )
+        painter = QtGui.QPainter(self)  #we will paint
 
-        painter = QtGui.QPainter(self)  # budeme kreslit
-
-        paths_view = paths.view('S4')
-
-        for row in range(row_size):
-            for column in range(col_size):
+        for row in range(row_min, row_max):
+            for column in range(col_min, col_max):
                 # získáme čtvereček, který budeme vybarvovat
                 x, y = self._ltop(row, column)
                 rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
@@ -205,7 +199,9 @@ class GridWidget(QtWidgets.QWidget):
                             if not ( self.play_mode and img.num >= 2 ):
                                 img.svg.render(painter,rect)
 
-                self._repaint_dudes()
+                if self.play_mode:
+                    self._repaint_dudes(painter)
+
 
         self.set_grid_size()
 

@@ -69,7 +69,6 @@ class GridWidget(QtWidgets.QWidget):
         self.array = array
         self.set_grid_size()
         self.play_mode = False;
-        self.dudes = {}
 
     def _ptol(self,x,y):
         return y // self.cell_size, x // self.cell_size
@@ -111,10 +110,28 @@ class GridWidget(QtWidgets.QWidget):
         return paths
 
     def update_actor( self, actor ):
-        dude = self.dudes[ (actor.row, actor.column) ]
+
+        x, y = self._ltop(actor.row, actor.column)
+        rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
+
+        print(x,y,self.cell_size, self.cell_size)
+
+        painter = QtGui.QPainter(self)
+        color = QtGui.QColor(255, 255, 255)
+
+        # vyplníme čtvereček barvou
+        painter.fillRect(rect, QtGui.QBrush(color))
+
+
+        IMG[ 'Dude1' ].svg.render(painter,rect)
+
+
+
+        self.update() # TODO!!!! localizuj
         pass
 
-    def _animate_dude( self, point ):
+
+    """def _animate_dude( self, point ):
 
         if point not in self.dudes:
             self.dudes[point] = actor.Actor(self, *point, self.array[point] )
@@ -126,7 +143,24 @@ class GridWidget(QtWidgets.QWidget):
         print(point)
         print( self.dudes[point].kind )
 
+    """
 
+    def init_dudes( self ):
+        print("Game is startin'")
+
+        self.dudes = []
+
+        row_size, col_size = self.array.shape
+        for row in range(row_size):
+            for column in range(col_size):
+                if self.array[row,column] >= 2:
+                    point = (row, column)
+                    dude = actor.Actor(self, *point, self.array[row,column] )
+                    asyncio.ensure_future( dude.behavior() )  #TODO: look how MI-PYT solved asyncio calling from init in actor class
+                    self.dudes.append( dude )
+
+    def _repaint_dudes( self ):
+        pass
 
 
     def paintEvent(self, event):
@@ -168,10 +202,11 @@ class GridWidget(QtWidgets.QWidget):
                 if self.array[row,column] != 0:
                     for img in IMG.values():
                         if self.array[row, column] == img.num:
-                            if self.play_mode and img.num >= 2:
-                                self._animate_dude( (row,column) )
-                            else:
+                            if not ( self.play_mode and img.num >= 2 ):
                                 img.svg.render(painter,rect)
+
+                self._repaint_dudes()
+
         self.set_grid_size()
 
     def wheelEvent(self, event):
@@ -293,6 +328,8 @@ class Gui():
             self.display = QtWidgets.QLCDNumber()
             self.toolbar.addWidget( self.display )
             asyncio.ensure_future(self._update_time())
+            self.grid.init_dudes()
+
         else:
             self.palette.show()
             #self.display.hide()

@@ -43,7 +43,7 @@ class Actor:
         self.column = column
         self.kind = kind
         self.grid = grid
-        self.task = asyncio.ensure_future(self.behavior())
+        #self.task = asyncio.ensure_future(self.behavior())
 
     async def behavior(self):
         """Coroutine containing the actor's behavior
@@ -55,13 +55,16 @@ class Actor:
         To be reimplemented in subclasses..
         """
         while True:
-            shape = self.grid.directions.shape
-            row = int(self.row)
-            column = int(self.column)
-            if 0 <= row < shape[0] and 0 <= column < shape[1]:
-                direction = self.grid.directions[row, column]
-            else:
-                direction = b'?'
+            #shape = self.grid.directions.shape
+            #row = int(self.row)
+            #column = int(self.column)
+            #if 0 <= row < shape[0] and 0 <= column < shape[1]:
+            direction = self.grid.directions[ int(self.row), int(self.column) ]
+            #else:
+            #    direction = b'?'
+
+            print( direction )
+
 
             if direction == b'v':
                 await self.step(1, 0)

@@ -72,9 +72,9 @@ class Actor:
             #    direction = b'?'
 
             if direction == b'v':
-                await self.step(0, 1)
-            elif direction == b'>':
                 await self.step(1, 0)
+            elif direction == b'>':
+                await self.step(0, 1)
             elif direction == b'^':
                 await self.step(-1, 0)
             elif direction == b'<':
@@ -166,7 +166,13 @@ class Actor:
 
 class Confused_Actor (Actor):
 
-     async def behavior(self):
+    def is_ok( self, row, column ):
+
+        shape = self.grid.directions.shape
+        return ( 0 <= row < shape[0] and 0 <= column < shape[1] and self.grid.array[ row, column ] >= 0 )
+
+
+    async def behavior(self):
 
         if self.grid.directions[ int(self.row), int(self.column) ] == b' ':
             self.grid.no_path()
@@ -179,11 +185,17 @@ class Confused_Actor (Actor):
 
             direction = self.grid.directions[ int(self.row), int(self.column) ]
 
+            if direction == b'X':
+                self.grid.end_game()
+                return
+            if direction ==b' ' or direction ==b'#' :
+                self.grid.no_path()
+
             r1 = random.randint(0,1)
             if r1 == 0:
                 r_dir = random.randint(0,3)
                 move = DIR[r_dir][1]
-                if array[ self.row + move[0], self.column + move[1] ] >= 0:
+                if self.is_ok( self.row + move[0], self.column + move[1] ):
                     await self.step( * move  )
                     continue
 
@@ -191,12 +203,7 @@ class Confused_Actor (Actor):
                 if direction == d[0]:
                     move = d[1]
                     break
-            else:
-                if direction == b'X':
-                    self.grid.end_game()
-                    return
-                else:
-                    self.grid.no_path()
+
 
             await self.step( *move )
 

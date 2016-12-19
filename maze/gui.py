@@ -22,12 +22,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 source: https://github.com/lopatovsky/Maze
 All the graphic come from: http://opengameart.org/users/kenney
 """
+
 import asyncio
 from quamash import QEventLoop
 from PyQt5 import QtWidgets, uic, QtGui, QtCore, QtSvg
 import numpy
 import glob
 import os
+import random
 from docutils.core import publish_parts
 from . import maze_generator, maze_solver, actor
 
@@ -127,7 +129,8 @@ class GridWidget(QtWidgets.QWidget):
 
         x, y = self._ltop(actor.row, actor.column)
         rect = QtCore.QRect(x, y, int(self.cell_size), int(self.cell_size) )
-        self.update(rect)
+        self.update( rect )
+        self.actor = actor
 
     def start_game( self ):
 
@@ -193,10 +196,21 @@ class GridWidget(QtWidgets.QWidget):
             #print(x,y,self.cell_size, self.cell_size)
             IMG[ "Dude"+ str(dude.kind - 1) ].svg.render(painter,rect)
 
+    def _repaint_dude( self, painter ):
+        dude = self.actor
+
+        x, y = self._ltop(dude.row, dude.column)
+        rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
+
+        #print(x,y,self.cell_size, self.cell_size)
+        IMG[ "Dude"+ str(dude.kind - 1) ].svg.render(painter,rect)
+
 
 
     def paintEvent(self, event):
 
+
+        painter = QtGui.QPainter(self)  #we will paint
 
         rect = event.rect()
         row_min, col_min = self._ptol(rect.left(), rect.top())
@@ -206,6 +220,15 @@ class GridWidget(QtWidgets.QWidget):
         row_max = min(row_max + 1, self.array.shape[0])
         col_max = min(col_max + 1, self.array.shape[1])
 
+        if(row_max - row_min < 2 ):
+            for row in range(row_min, row_max):
+                for column in range(col_min, col_max):
+                    x, y = self._ltop(row, column)
+                    rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
+                    IMG['Grass'].svg.render(painter,rect)
+            self._repaint_dude( painter )
+            return
+
 
 
         row_size, col_size = self.array.shape
@@ -214,7 +237,7 @@ class GridWidget(QtWidgets.QWidget):
             paths = self.__get_paths( )
             paths_view = paths.view('S4')
 
-        painter = QtGui.QPainter(self)  #we will paint
+
 
         for row in range(row_min, row_max):
             for column in range(col_min, col_max):

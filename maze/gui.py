@@ -31,7 +31,8 @@ import os
 from docutils.core import publish_parts
 from . import maze_generator, maze_solver, actor
 
-CELL_SIZE = 24
+CELL_SIZE = 32
+
 
 class image:
     def __init__( self, name, path, num = -3 ):
@@ -146,11 +147,11 @@ class GridWidget(QtWidgets.QWidget):
                     elif kind == 3:
                         dude = actor.Confused_Actor(self, *point, self.array[row,column] )
                     elif kind == 4:
-                        dude = actor.Actor(self, *point, self.array[row,column] )
+                        dude = actor.Fast_Actor(self, *point, self.array[row,column] )
                     elif kind == 5:
-                        dude = actor.Actor(self, *point, self.array[row,column] )
+                        dude = actor.Accelerated_Actor(self, *point, self.array[row,column] )
                     elif kind == 6:
-                        dude = actor.Actor(self, *point, self.array[row,column] )
+                        dude = actor.Teleported_Actor(self, *point, self.array[row,column] )
 
                     fut = asyncio.ensure_future( dude.behavior() )  #TODO: look how MI-PYT solved asyncio calling from init in actor class
                     self.futures.append(fut)
@@ -298,6 +299,9 @@ class Gui():
 
 
         self.window = QtWidgets.QMainWindow()
+        #self.window.showFullScreen()
+
+
         with open ('GUI/mainwindow.ui') as f:
             uic.loadUi(f,self.window)
 
@@ -484,7 +488,7 @@ class Gui():
         return self.loop.run_forever()
 
 def main():
-    PYTHONASYNCIODEBUG=1
+
     gui = Gui()
     return gui.run()
 

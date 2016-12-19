@@ -48,6 +48,7 @@ class Actor:
         self.grid = grid
         #self.task = asyncio.ensure_future(self.behavior())
 
+
     async def behavior(self):
         """Coroutine containing the actor's behavior
 
@@ -71,19 +72,23 @@ class Actor:
             #else:
             #    direction = b'?'
 
-            if direction == b'v':
-                await self.step(1, 0)
-            elif direction == b'>':
-                await self.step(0, 1)
-            elif direction == b'^':
-                await self.step(-1, 0)
-            elif direction == b'<':
-                await self.step(0, -1)
-            elif direction == b'X':
-                self.grid.end_game()
-                return
-            else: #direction == b' ' or b'#':
-                self.grid.no_path()
+            for d in DIR:
+                if direction == d[0]:
+                    move = d[1]
+                    break
+            else:
+                if direction == b'X':
+                    self.grid.end_game()
+                    return
+                else: #direction == b' ' or b'#':
+                    self.grid.no_path()
+
+            await self.step( *move )
+
+    def is_ok( self, row, column ):
+
+        shape = self.grid.directions.shape
+        return ( 0 <= row < shape[0] and 0 <= column < shape[1] and self.grid.array[ row, column ] >= 0 )
 
 
     def _progress(self, duration):
@@ -161,16 +166,134 @@ class Actor:
         with self._update_context():
             self.row = start_row
 
+    async def shiver(self, duration=0.1):
+        """Coroutine for a small shiver
+
+        Smoothly moves a bit left and right in ``duration`` seconds.
+        """
+        start_column = self.column
+
+        for p in self._progress(duration):
+            with self._update_context():
+                # jump along a parabola
+                self.column = start_column - p * (1-p)
+
+            await asyncio.sleep(duration/self.grid.cell_size * 2)
+
+        with self._update_context():
+            self.column = start_column
+
+
+class Fast_Actor ( Actor ):  #TODO refactor same code.
+
+    async def behavior(self):
+
+        if self.grid.directions[ int(self.row), int(self.column) ] == b' ':
+            self.grid.no_path()
+        await self.jump(1.0)
+
+        while True:
+
+            direction = self.grid.directions[ int(self.row), int(self.column) ]
+
+            for d in DIR:
+                if direction == d[0]:
+                    move = d[1]
+                    break
+            else:
+                if direction == b'X':
+                    self.grid.end_game()
+                    return
+                else: #direction == b' ' or b'#':
+                    self.grid.no_path()
+
+            await self.step( *move, 0.57 ) #cca 75% faster.
+
+
+class Teleported_Actor ( Actor ):
+
+    async def behavior(self):
+
+        distances = self.grid.solved.distances
+
+        if self.grid.directions[ int(self.row), int(self.column) ] == b' ':
+            self.grid.no_path()
+        await self.jump(1.0)
+
+        while True:
+
+            if random.randint(0,10) <= 1:
+
+
+                shape = self.grid.directions.shape
+                move = ( random.randint( 0,shape[0] - 1 ), random.randint( 0,shape[0] - 1 ) )
+
+                if self.is_ok( *move ) and distances[move] > 5:
+                    for i in range(4):
+                        await self.shiver()
+                    self.row, self.column = move
+                    #print(self.row, self.column)
+                    for i in range(4):
+                        await self.shiver()
+
+
+
+
+            else:
+
+                direction = self.grid.directions[ int(self.row), int(self.column) ]
+
+                for d in DIR:
+                    if direction == d[0]:
+                        move = d[1]
+                        break
+                else:
+                    if direction == b'X':
+                        self.grid.end_game()
+                        return
+                    else: #direction == b' ' or b'#':
+                        self.grid.no_path()
+
+                await self.step( *move)
+
+
+class Accelerated_Actor ( Actor ):  #TODO refactor same code.
+
+    async def behavior(self):
+
+        if self.grid.directions[ int(self.row), int(self.column) ] == b' ':
+            self.grid.no_path()
+        await self.jump(1.0)
+        last = (0,0)
+        speed = 1.0
+
+        while True:
+
+            direction = self.grid.directions[ int(self.row), int(self.column) ]
+
+            for d in DIR:
+                if direction == d[0]:
+                    move = d[1]
+                    break
+            else:
+                if direction == b'X':
+                    self.grid.end_game()
+                    return
+                else: #direction == b' ' or b'#':
+                    self.grid.no_path()
+
+
+            if last == move:
+                speed *= 9/10
+            else:
+                speed = 1.0
+
+            last = move
+            await self.step( *move, speed )
 
 
 
 class Confused_Actor (Actor):
-
-    def is_ok( self, row, column ):
-
-        shape = self.grid.directions.shape
-        return ( 0 <= row < shape[0] and 0 <= column < shape[1] and self.grid.array[ row, column ] >= 0 )
-
 
     async def behavior(self):
 

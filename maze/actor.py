@@ -2,6 +2,9 @@
 import asyncio
 import contextlib
 import time
+import random
+
+DIR = [ ( b'v', (1,0) ), ( b'>', (0,1) ) , ( b'^', (-1,0) ), ( b'<', (0,-1) ) ]
 
 
 class Actor:
@@ -54,6 +57,11 @@ class Actor:
 
         To be reimplemented in subclasses..
         """
+
+        if self.grid.directions[ int(self.row), int(self.column) ] == b' ':
+            self.grid.no_path()
+        await self.jump(1.0)
+
         while True:
             #shape = self.grid.directions.shape
             #row = int(self.row)
@@ -63,19 +71,20 @@ class Actor:
             #else:
             #    direction = b'?'
 
-            print( direction )
-
-
             if direction == b'v':
-                await self.step(1, 0)
-            elif direction == b'>':
                 await self.step(0, 1)
+            elif direction == b'>':
+                await self.step(1, 0)
             elif direction == b'^':
                 await self.step(-1, 0)
             elif direction == b'<':
                 await self.step(0, -1)
-            else:
-                await self.jump()
+            elif direction == b'X':
+                self.grid.end_game()
+                return
+            else: #direction == b' ' or b'#':
+                self.grid.no_path()
+
 
     def _progress(self, duration):
         """Iterator that yields progress from 0 to 1 based on time
@@ -151,3 +160,43 @@ class Actor:
 
         with self._update_context():
             self.row = start_row
+
+
+
+
+class Confused_Actor (Actor):
+
+     async def behavior(self):
+
+        if self.grid.directions[ int(self.row), int(self.column) ] == b' ':
+            self.grid.no_path()
+        await self.jump(1.0)
+
+        array = self.grid.array
+        move = ( 0, 0 )
+
+        while True:
+
+            direction = self.grid.directions[ int(self.row), int(self.column) ]
+
+            r1 = random.randint(0,1)
+            if r1 == 0:
+                r_dir = random.randint(0,3)
+                move = DIR[r_dir][1]
+                if array[ self.row + move[0], self.column + move[1] ] >= 0:
+                    await self.step( * move  )
+                    continue
+
+            for d in DIR:
+                if direction == d[0]:
+                    move = d[1]
+                    break
+            else:
+                if direction == b'X':
+                    self.grid.end_game()
+                    return
+                else:
+                    self.grid.no_path()
+
+            await self.step( *move )
+

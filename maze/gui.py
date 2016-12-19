@@ -62,9 +62,10 @@ VALUE_ROLE = QtCore.Qt.UserRole
 
 class GridWidget(QtWidgets.QWidget):
 
-    def __init__(self, array):
+    def __init__(self, array, gui):
 
         super().__init__()
+        self.gui = gui
         self.cell_size = CELL_SIZE
         self.array = array
         self.set_grid_size()
@@ -123,27 +124,62 @@ class GridWidget(QtWidgets.QWidget):
 
     def update_actor( self, actor ):
 
-
         x, y = self._ltop(actor.row, actor.column)
         rect = QtCore.QRect(x, y, int(self.cell_size), int(self.cell_size) )
         self.update(rect)
 
-
-
-
-    def init_dudes( self ):
-        print("Game is startin'")
+    def start_game( self ):
 
         self.dudes = []
+        self.futures = []
+        self.old_array = self.array.copy()
+        self.last = (-1,-1) # (-1,-1) means no path for dude at the beginning of the game
 
         row_size, col_size = self.array.shape
         for row in range(row_size):
             for column in range(col_size):
-                if self.array[row,column] >= 2:
+                kind = self.array[row,column]
+                if kind >= 2:
                     point = (row, column)
-                    dude = actor.Actor(self, *point, self.array[row,column] )
-                    asyncio.ensure_future( dude.behavior() )  #TODO: look how MI-PYT solved asyncio calling from init in actor class
+                    if kind == 2:
+                        dude = actor.Actor(self, *point, self.array[row,column] )
+                    elif kind == 3:
+                        dude = actor.Confused_Actor(self, *point, self.array[row,column] )
+                    elif kind == 4:
+                        dude = actor.Actor(self, *point, self.array[row,column] )
+                    elif kind == 5:
+                        dude = actor.Actor(self, *point, self.array[row,column] )
+                    elif kind == 6:
+                        dude = actor.Actor(self, *point, self.array[row,column] )
+
+                    fut = asyncio.ensure_future( dude.behavior() )  #TODO: look how MI-PYT solved asyncio calling from init in actor class
+                    self.futures.append(fut)
                     self.dudes.append( dude )
+
+    def end_game( self ):
+        for fut in self.futures:
+            fut.cancel()
+
+        self.array = self.old_array.copy()
+        self.change_maze()
+
+        self.gui.final_time_dialog()
+
+
+    def no_path( self ):
+
+        print( self.last )
+        if self.last == (-1,-1) :
+            print('die')
+
+            print()
+            self.gui.no_suitable_path_dialog()
+            print('dce')
+            self.end_game()
+        else:
+            self.array[ self.last ] = 0
+            self._solve()  #TODO move to the function, same as in mouse press event
+            self.update()
 
 
     def _repaint_dudes( self, painter ):
@@ -154,7 +190,7 @@ class GridWidget(QtWidgets.QWidget):
             rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
 
             #print(x,y,self.cell_size, self.cell_size)
-            IMG[ 'Dude1' ].svg.render(painter,rect)
+            IMG[ "Dude"+ str(dude.kind - 1) ].svg.render(painter,rect)
 
 
 
@@ -232,11 +268,16 @@ class GridWidget(QtWidgets.QWidget):
 
         if 0 <= row < shape[0] and 0 <= column < shape[1]:
             if event.button() == QtCore.Qt.LeftButton:
+
                 if not self.play_mode or self.array[row,column] == 0:
                     self.array[row,column] = self.selected
+                    self.last = (row,column)
+
             elif event.button() == QtCore.Qt.RightButton:
+
                 if not self.play_mode or self.array[row,column] == -1:
                     self.array[row,column] = 0
+
             else:
                 return
 
@@ -261,7 +302,7 @@ class Gui():
             uic.loadUi(f,self.window)
 
         array = numpy.zeros((10,13), dtype=numpy.int8 )
-        self.grid = GridWidget(array)
+        self.grid = GridWidget(array, self)
 
         scroll_area = self.window.findChild(QtWidgets.QScrollArea, 'scrollArea') # alebo aj QtWidgets.Qwidget - dedi
         scroll_area.setWidget( self.grid )
@@ -317,11 +358,24 @@ class Gui():
         self.grid.change_maze()
 
     async def _update_time(self):
-            value = 0
+            self.value = 0
             while True:
-                self.display.display(value)
+                self.display.display(self.value)
                 await asyncio.sleep(1)
-                value += 1
+                self.value += 1
+
+    def final_time_dialog(self):
+        #self.time_future.cancel() # TODO buggy cancel
+        self.play_action.setChecked(False)
+        self._play()
+        self._alert_dialog( True, "Game over!", "Your time was " + str(self.value) + " s." , "", QtWidgets.QMessageBox.Information )
+
+    def no_suitable_path_dialog(self):
+
+        self.play_action.setChecked(False)
+        self._play()
+        self._alert_dialog( True, "Impossible to play!", "Some dudes can't find the path towards castle" , "", QtWidgets.QMessageBox.Warning )
+
 
     def _play(self):
         isChecked = self.play_action.isChecked()
@@ -333,8 +387,8 @@ class Gui():
             self.palette.hide()
             self.display = QtWidgets.QLCDNumber()
             self.toolbar.addWidget( self.display )
-            asyncio.ensure_future(self._update_time())
-            self.grid.init_dudes()
+            time_future = asyncio.ensure_future(self._update_time())
+            self.grid.start_game()
 
         else:
             self.palette.show()
@@ -430,7 +484,7 @@ class Gui():
         return self.loop.run_forever()
 
 def main():
-
+    PYTHONASYNCIODEBUG=1
     gui = Gui()
     return gui.run()
 

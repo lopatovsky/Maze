@@ -3,4 +3,5 @@ numpy==1.11.2
 pytest==3.0.4
 Cython==0.25.1
 PyQt5==5.7
+asyncio==3.4.3
 

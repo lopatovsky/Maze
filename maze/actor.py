@@ -222,6 +222,11 @@ class Teleported_Actor ( Actor ):
 
         while True:
 
+            direction = self.grid.directions[ int(self.row), int(self.column) ]
+            if direction == b'X':
+                        self.grid.end_game()
+                        return
+
             if random.randint(0,10) <= 1:
 
 
@@ -240,8 +245,6 @@ class Teleported_Actor ( Actor ):
 
 
             else:
-
-                direction = self.grid.directions[ int(self.row), int(self.column) ]
 
                 for d in DIR:
                     if direction == d[0]:

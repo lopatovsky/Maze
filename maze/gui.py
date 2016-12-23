@@ -30,6 +30,7 @@ import numpy
 import glob
 import os
 import random
+import math
 from docutils.core import publish_parts
 from . import maze_generator, maze_solver, actor
 
@@ -155,11 +156,11 @@ class GridWidget(QtWidgets.QWidget):
                 if kind >= 2:
                     point = (row, column)
                     if kind == 2:
-                        dude = actor.Fast_Actor(self, *point, self.array[row,column] )
+                        dude = actor.Right_hand_Actor(self, *point, self.array[row,column] )
                     elif kind == 3:
                         dude = actor.Confused_Actor(self, *point, self.array[row,column] )
                     elif kind == 4:
-                        dude = actor.Right_hand_Actor(self, *point, self.array[row,column] )
+                        dude = actor.Fast_Actor(self, *point, self.array[row,column] )
                     elif kind == 5:
                         dude = actor.Accelerated_Actor(self, *point, self.array[row,column] )
                     elif kind == 6:
@@ -202,9 +203,6 @@ class GridWidget(QtWidgets.QWidget):
             IMG[ "Dude"+ str(dude.kind - 1) ].svg.render(painter,rect)
 
 
-    sup = 0
-
-
     def paintEvent(self, event):
 
 
@@ -223,11 +221,6 @@ class GridWidget(QtWidgets.QWidget):
         if not self.play_mode:
             paths = self.__get_paths( )
             paths_view = paths.view('S4')
-
-        import datetime
-        self.sup += 1
-        print(self.sup)
-        print(datetime.datetime.now())
 
 
         for row in range(row_min, row_max):
@@ -273,6 +266,19 @@ class GridWidget(QtWidgets.QWidget):
         self.set_grid_size()
         self.update()
 
+    def can_put_wall(self, *point ):
+        if self.array[point] < 0 or self.array[point] == 1: return
+        for dude in self.dudes:
+            #pos = (dude.row, dude.column)
+            print ("p" , point)
+            print ((dude.row, dude.column))
+            for x in range ( int(math.floor(dude.row)), int(math.ceil(dude.row)) + 1 ):
+                 for y in range ( int(math.floor(dude.column)), int(math.ceil(dude.column)) + 1 ):
+                    if (x,y) == point: return
+
+        self.array[point] = -1
+        self.change_maze()
+
     def mousePressEvent(self, event):
 
         row, column = self._ptol( event.x() , event.y() )
@@ -280,22 +286,32 @@ class GridWidget(QtWidgets.QWidget):
         shape = self.array.shape
 
         if 0 <= row < shape[0] and 0 <= column < shape[1]:
-            if event.button() == QtCore.Qt.LeftButton:
 
-                if not self.play_mode or self.array[row,column] == 0:
-                    self.array[row,column] = self.selected
-                    self.last = (row,column)
+            if not self.play_mode:
+                if event.button() == QtCore.Qt.LeftButton:
+                        self.array[row,column] = self.selected
 
-            elif event.button() == QtCore.Qt.RightButton:
+                elif event.button() == QtCore.Qt.RightButton:
+                        self.array[row,column] = 0
 
-                if not self.play_mode or self.array[row,column] == -1:
-                    self.array[row,column] = 0
+                #todo only if changed
+                self.change_maze()
 
             else:
-                return
 
-        #todo only if changed
-        self.change_maze()
+
+                if event.button() == QtCore.Qt.LeftButton:
+                    self.can_put_wall( row, column )
+
+                elif event.button() == QtCore.Qt.RightButton:
+
+                    if self.array[row,column] == -1:
+                        self.array[row,column] = 0
+                        self.change_maze()
+                else:
+                    return
+
+
 
 
 

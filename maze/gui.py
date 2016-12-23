@@ -4,6 +4,9 @@ Dude's Maze
 The maze creator, generator and solver.
 Choose your dude and let find his way towards the castle!
 
+NEW! How long will you protect the castles from malituous dudes?
+Change the maze and compare your best time with friends!
+
 | Copyright © 2016 Lukáš Lopatovský
 
 This program is free software: you can redistribute it and/or modify

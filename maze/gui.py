@@ -146,7 +146,7 @@ class GridWidget(QtWidgets.QWidget):
                 if kind >= 2:
                     point = (row, column)
                     if kind == 2:
-                        dude = actor.Actor(self, *point, self.array[row,column] )
+                        dude = actor.Right_hand_Actor(self, *point, self.array[row,column] )
                     elif kind == 3:
                         dude = actor.Confused_Actor(self, *point, self.array[row,column] )
                     elif kind == 4:

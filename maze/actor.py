@@ -5,7 +5,7 @@ import time
 import random
 
 DIR = [ ( b'v', (1,0) ), ( b'>', (0,1) ) , ( b'^', (-1,0) ), ( b'<', (0,-1) ) ]
-
+#RIGHT = { ( (1,0),(0,-1)), ( (0,1),(1,0)), ( (-1,0),(0,1)) , ( (0,-1),(-1,0))  }
 
 class Actor:
     def __init__(self, grid, row, column, kind):
@@ -329,4 +329,69 @@ class Confused_Actor (Actor):
 
 
             await self.step( *move )
+
+class Right_hand_Actor ( Actor ):
+
+    #def is_ok( self, row, column ):
+    #    shape = self.grid.directions.shape
+    #    return ( 0 <= row < shape[0] and 0 <= column < shape[1] and self.grid.array[ row, column ] >= 0  and self.visited[ row, column ] >= 0)
+
+
+    async def behavior(self):
+
+       # self.visited = self.grid.array.copy()
+
+        if self.grid.directions[ int(self.row), int(self.column) ] == b' ':
+            self.grid.no_path()
+        await self.jump(1.0)
+
+        begin = True;
+        last_move = (0,0)
+        last_speed = 1.0
+
+
+        while True:
+
+            direction = self.grid.directions[ int(self.row), int(self.column) ]
+            #self.visited[ self.row, self.column ] = -1
+
+
+            if direction == b'X':
+                        self.grid.end_game()
+                        return
+            if direction ==b' ' or direction ==b'#' :
+                self.grid.no_path()
+
+            if last_move[1] == 0: right = last_move[1], - last_move[0]
+            else: right = last_move[1], last_move[0]
+
+            #print(self.row+right[0], self.column+right[1])
+
+            #print(self.grid.array[self.row+right[0], self.column+right[1]])
+
+            if  self.is_ok( self.row+right[0], self.column+right[1] ) == False :
+                move = last_move
+                begin = False
+            elif begin == False:
+                move = right
+            else:
+
+                for d in DIR:
+                    if direction == d[0]:
+                        move = d[1]
+                        break
+
+
+            while self.is_ok( self.row+move[0], self.column+move[1] ) == False:
+                print("here")
+                if move[0] == 0: move = -move[1], move[0]
+                else: move = move[1], move[0]
+
+            speed = 1.0-random.randint(0,99)/100.0
+            alpha = 0.7
+            speed = (speed *  alpha + last_speed * (1.0 - alpha))
+
+            last_move = move
+            last_speed = speed
+            await self.step( *move, speed ) #cca 75% faster.
 

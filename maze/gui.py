@@ -31,6 +31,7 @@ import glob
 import os
 import random
 import math
+import time
 from docutils.core import publish_parts
 from . import maze_generator, maze_solver, actor
 
@@ -394,7 +395,8 @@ class Gui():
                 self.value += 1
 
     def final_time_dialog(self):
-        self._alert_dialog( True, "Game over!", "Your time was " + str(self.value) + " s." , "", QtWidgets.QMessageBox.Information )
+        game_time = time.time() - self.start_time - 1.0 # 1.0 - start jump time
+        self._alert_dialog( True, "Game over!", "Your time was " + "{0:.2f}".format(game_time)  + " s." , "", QtWidgets.QMessageBox.Information )
 
     def no_suitable_path_dialog(self):
 
@@ -419,11 +421,13 @@ class Gui():
             self.palette.hide()
             self.value = 0
 
-            if self.running_timer == False:
+            #if self.running_timer == False:
                 #self.display = QtWidgets.QLCDNumber() #TODO display
                 #self.toolbar.addWidget( self.display )
-                self.time_future = asyncio.ensure_future(self._update_time())
-                self.running_timer = True
+                #self.time_future = asyncio.ensure_future(self._update_time())
+                #self.running_timer = True
+
+            self.start_time = time.time()
 
             self.grid.start_game()
 

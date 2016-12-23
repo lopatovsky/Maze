@@ -185,15 +185,7 @@ class GridWidget(QtWidgets.QWidget):
 
     def no_path( self ):
 
-        print( self.last )
-        if self.last == (-1,-1) :
-            print('die')
-            self.end_game( "no_suitable_path_dialog" )
-        else:
-            self.array[ self.last ] = 0
-            self._solve()  #TODO move to the function, same as in mouse press event
-            self.update()
-
+        self.end_game( "no_suitable_path_dialog" )
 
     def _repaint_dudes( self, painter ):
 
@@ -269,15 +261,22 @@ class GridWidget(QtWidgets.QWidget):
     def can_put_wall(self, *point ):
         if self.array[point] < 0 or self.array[point] == 1: return
         for dude in self.dudes:
-            #pos = (dude.row, dude.column)
-            print ("p" , point)
-            print ((dude.row, dude.column))
+
             for x in range ( int(math.floor(dude.row)), int(math.ceil(dude.row)) + 1 ):
                  for y in range ( int(math.floor(dude.column)), int(math.ceil(dude.column)) + 1 ):
                     if (x,y) == point: return
 
         self.array[point] = -1
-        self.change_maze()
+        self._solve()
+
+
+        for dude in self.dudes:
+            if self.directions[ int(round( dude.row )), int( round(dude.row)) ] == b' ':
+                self.array[point] = 0
+                self._solve()
+                return
+
+        self.update()
 
     def mousePressEvent(self, event):
 

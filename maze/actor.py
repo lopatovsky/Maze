@@ -80,8 +80,6 @@ class Actor:
                 if direction == b'X':
                     self.grid.end_game()
                     return
-                else: #direction == b' ' or b'#':
-                    self.grid.no_path()
 
             await self.step( *move )
 
@@ -204,8 +202,6 @@ class Fast_Actor ( Actor ):  #TODO refactor same code.
                 if direction == b'X':
                     self.grid.end_game()
                     return
-                else: #direction == b' ' or b'#':
-                    self.grid.no_path()
 
             await self.step( *move, 0.57 ) #cca 75% faster.
 
@@ -254,8 +250,6 @@ class Teleported_Actor ( Actor ):
                     if direction == b'X':
                         self.grid.end_game()
                         return
-                    else: #direction == b' ' or b'#':
-                        self.grid.no_path()
 
                 await self.step( *move)
 
@@ -282,8 +276,6 @@ class Accelerated_Actor ( Actor ):  #TODO refactor same code.
                 if direction == b'X':
                     self.grid.end_game()
                     return
-                else: #direction == b' ' or b'#':
-                    self.grid.no_path()
 
 
             if last == move:
@@ -314,8 +306,6 @@ class Confused_Actor (Actor):
             if direction == b'X':
                 self.grid.end_game()
                 return
-            if direction ==b' ' or direction ==b'#' :
-                self.grid.no_path()
 
             r1 = random.randint(0,1)
             if r1 == 0:
@@ -358,8 +348,6 @@ class Right_hand_Actor ( Actor ):
             if direction == b'X':
                         self.grid.end_game()
                         return
-            if direction ==b' ' or direction ==b'#' :
-                self.grid.no_path()
 
             if last_move[1] == 0: right = last_move[1], - last_move[0]
             else: right = last_move[1], last_move[0]

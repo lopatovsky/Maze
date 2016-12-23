@@ -44,9 +44,11 @@ class image:
         self.svg = QtSvg.QSvgRenderer( self.path )
 
 IMG = {}
+NUM_INDEX = {}
 
 for (item, num) in [ ('Grass',0), ('Wall',-1), ('Wall2',-2), ('Castle',1), ('Dude1',2), ('Dude2',3), ('Dude3',4), ('Dude4',5), ('Dude5',6) ]:
     IMG[ item ] = image( item, 'img/' + item.lower() + '.svg', num )
+    NUM_INDEX[ num ] = IMG[item].svg
 
 LINES = {}
 for item in glob.glob('img/lines/*.svg'):
@@ -138,7 +140,6 @@ class GridWidget(QtWidgets.QWidget):
         x, y = self._ltop(actor.row, actor.column)
         rect = QtCore.QRect(x, y, int(self.cell_size), int(self.cell_size) )
         self.update( rect )
-        self.actor = actor
 
     def start_game( self ):
 
@@ -154,17 +155,17 @@ class GridWidget(QtWidgets.QWidget):
                 if kind >= 2:
                     point = (row, column)
                     if kind == 2:
-                        dude = actor.Right_hand_Actor(self, *point, self.array[row,column] )
+                        dude = actor.Fast_Actor(self, *point, self.array[row,column] )
                     elif kind == 3:
                         dude = actor.Confused_Actor(self, *point, self.array[row,column] )
                     elif kind == 4:
-                        dude = actor.Fast_Actor(self, *point, self.array[row,column] )
+                        dude = actor.Right_hand_Actor(self, *point, self.array[row,column] )
                     elif kind == 5:
                         dude = actor.Accelerated_Actor(self, *point, self.array[row,column] )
                     elif kind == 6:
                         dude = actor.Teleported_Actor(self, *point, self.array[row,column] )
 
-                    fut = asyncio.ensure_future( dude.behavior() )  #TODO: look how MI-PYT solved asyncio calling from init in actor class
+                    fut = asyncio.ensure_future( dude.behavior() )
                     self.futures.append(fut)
                     self.dudes.append( dude )
 
@@ -196,20 +197,12 @@ class GridWidget(QtWidgets.QWidget):
     def _repaint_dudes( self, painter ):
 
         for dude in self.dudes:
-
             x, y = self._ltop(dude.row, dude.column)
             rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
             IMG[ "Dude"+ str(dude.kind - 1) ].svg.render(painter,rect)
 
-    """def _repaint_dude( self, painter ):
-        dude = self.actor
 
-        x, y = self._ltop(dude.row, dude.column)
-        rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
-
-        #print(x,y,self.cell_size, self.cell_size)
-        IMG[ "Dude"+ str(dude.kind - 1) ].svg.render(painter,rect)
-    """
+    sup = 0
 
 
     def paintEvent(self, event):
@@ -225,23 +218,16 @@ class GridWidget(QtWidgets.QWidget):
         row_max = min(row_max + 1, self.array.shape[0])
         col_max = min(col_max + 1, self.array.shape[1])
 
-        """if(row_max - row_min < 2 ):
-            for row in range(row_min, row_max):
-                for column in range(col_min, col_max):
-                    x, y = self._ltop(row, column)
-                    rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
-                    IMG['Grass'].svg.render(painter,rect)
-            self._repaint_dude( painter )
-            return
-        """
-
-
         row_size, col_size = self.array.shape
 
         if not self.play_mode:
             paths = self.__get_paths( )
             paths_view = paths.view('S4')
 
+        import datetime
+        self.sup += 1
+        print(self.sup)
+        print(datetime.datetime.now())
 
 
         for row in range(row_min, row_max):
@@ -250,10 +236,10 @@ class GridWidget(QtWidgets.QWidget):
                 x, y = self._ltop(row, column)
                 rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
 
-                color = QtGui.QColor(255, 255, 255)
+                #color = QtGui.QColor(255, 255, 255)
 
                 # vyplníme čtvereček barvou
-                painter.fillRect(rect, QtGui.QBrush(color))
+                #painter.fillRect(rect, QtGui.QBrush(color))
 
                 #if self.play_mode:
                 IMG['Grass'].svg.render(painter,rect)
@@ -265,18 +251,15 @@ class GridWidget(QtWidgets.QWidget):
                         if self.directions[row,column] != b'X':
                             ARROWS[ str(DIR_TO_NUM[self.directions[row,column] ])  ].svg.render(painter,rect)
 
-                #TODO - space for more effective approach
-                if self.array[row,column] != 0:
-                    for img in IMG.values():
-                        if self.array[row, column] == img.num:
-                            if not ( self.play_mode and img.num >= 2 ):
-                                img.svg.render(painter,rect)
+                    if self.array[row,column] != 0 :
+                        NUM_INDEX[self.array[row,column]].render(painter,rect)
+                else:
+                    if self.array[row,column] != 0 and self.array[row,column] < 2 :
+                        NUM_INDEX[self.array[row,column]].render(painter,rect)
 
-                if self.play_mode:
-                    self._repaint_dudes(painter)
+        if self.play_mode:
+            self._repaint_dudes(painter)
 
-
-        self.set_grid_size()
 
     def wheelEvent(self, event):
 
@@ -287,6 +270,7 @@ class GridWidget(QtWidgets.QWidget):
         else:
             event.ignore()
 
+        self.set_grid_size()
         self.update()
 
     def mousePressEvent(self, event):
@@ -311,9 +295,7 @@ class GridWidget(QtWidgets.QWidget):
                 return
 
         #todo only if changed
-        self._solve()
-
-        self.update()
+        self.change_maze()
 
 
 
@@ -431,7 +413,7 @@ class Gui():
             self.grid.start_game()
 
         else:
-            self.grid.end_game("my_fucking_function")
+            self.grid.end_game("no_ending")
 
             #self.display.hide()
 

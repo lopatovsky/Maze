@@ -4,7 +4,7 @@ import numpy
 
 setup(
     name='maze',
-    version='0.3',
+    version='0.4',
     description='generate & solve maze, GUI application',
     author='Lukas Lopatovsky',
     author_email='lopatovsky@gmail.com',

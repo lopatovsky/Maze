@@ -192,11 +192,9 @@ class GridWidget(QtWidgets.QWidget):
 
             x, y = self._ltop(dude.row, dude.column)
             rect = QtCore.QRectF(x, y, self.cell_size, self.cell_size )
-
-            #print(x,y,self.cell_size, self.cell_size)
             IMG[ "Dude"+ str(dude.kind - 1) ].svg.render(painter,rect)
 
-    def _repaint_dude( self, painter ):
+    """def _repaint_dude( self, painter ):
         dude = self.actor
 
         x, y = self._ltop(dude.row, dude.column)
@@ -204,7 +202,7 @@ class GridWidget(QtWidgets.QWidget):
 
         #print(x,y,self.cell_size, self.cell_size)
         IMG[ "Dude"+ str(dude.kind - 1) ].svg.render(painter,rect)
-
+    """
 
 
     def paintEvent(self, event):
@@ -220,7 +218,7 @@ class GridWidget(QtWidgets.QWidget):
         row_max = min(row_max + 1, self.array.shape[0])
         col_max = min(col_max + 1, self.array.shape[1])
 
-        if(row_max - row_min < 2 ):
+        """if(row_max - row_min < 2 ):
             for row in range(row_min, row_max):
                 for column in range(col_min, col_max):
                     x, y = self._ltop(row, column)
@@ -228,7 +226,7 @@ class GridWidget(QtWidgets.QWidget):
                     IMG['Grass'].svg.render(painter,rect)
             self._repaint_dude( painter )
             return
-
+        """
 
 
         row_size, col_size = self.array.shape
@@ -347,6 +345,7 @@ class Gui():
 
 
         self.toolbar = self.window.findChild(QtWidgets.QToolBar, 'toolBar')
+        self.running_timer = False
 
 
 
@@ -385,9 +384,8 @@ class Gui():
         self.grid.change_maze()
 
     async def _update_time(self):
-            self.value = 0
             while True:
-                self.display.display(self.value)
+                #self.display.display(self.value)
                 await asyncio.sleep(1)
                 self.value += 1
 
@@ -412,9 +410,14 @@ class Gui():
         if isChecked:
             self.grid.selected = -1
             self.palette.hide()
-            self.display = QtWidgets.QLCDNumber()
-            self.toolbar.addWidget( self.display )
-            time_future = asyncio.ensure_future(self._update_time())
+            self.value = 0
+
+            if self.running_timer == False:
+                #self.display = QtWidgets.QLCDNumber() #TODO diplay
+                #self.toolbar.addWidget( self.display )
+                self.time_future = asyncio.ensure_future(self._update_time())
+                self.running_timer = True
+
             self.grid.start_game()
 
         else:

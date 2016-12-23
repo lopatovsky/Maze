@@ -298,28 +298,42 @@ class Confused_Actor (Actor):
 
         array = self.grid.array
         move = ( 0, 0 )
+        last_pos = ( -1, -1 )
 
         while True:
-
-            direction = self.grid.directions[ int(self.row), int(self.column) ]
+            pos = int(self.row), int(self.column)
+            direction = self.grid.directions[ pos ]
 
             if direction == b'X':
                 self.grid.end_game()
                 return
 
-            r1 = random.randint(0,1)
+            chosen = 0
+
+            r1 = random.randint(0,2)
             if r1 == 0:
                 r_dir = random.randint(0,3)
                 move = DIR[r_dir][1]
                 if self.is_ok( self.row + move[0], self.column + move[1] ):
-                    await self.step( * move  )
-                    continue
+                    chosen = 1
 
-            for d in DIR:
-                if direction == d[0]:
-                    move = d[1]
-                    break
+            if chosen == 0:
+                for d in DIR:
+                    if direction == d[0]:
+                        move = d[1]
+                        break
 
+
+            if (pos[0] + move[0], pos[1] + move[1]) == last_pos:
+                for d in DIR:
+                    p = self.row + d[1][0], self.column + d[1][1]
+                    if self.is_ok( *p ) and p!=last_pos:
+                        chosen = 0
+
+            if chosen == 0:
+                continue
+
+            last_pos = pos
 
             await self.step( *move )
 

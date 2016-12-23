@@ -168,14 +168,17 @@ class GridWidget(QtWidgets.QWidget):
                     self.futures.append(fut)
                     self.dudes.append( dude )
 
-    def end_game( self ):
+
+    def _end_game(self):
         for fut in self.futures:
             fut.cancel()
-
         self.array = self.old_array.copy()
         self.change_maze()
 
-        self.gui.final_time_dialog()
+
+    def end_game( self , dialog_function = "final_time_dialog" ):
+        self._end_game()
+        self.gui.end_game( dialog_function )
 
 
     def no_path( self ):
@@ -183,11 +186,7 @@ class GridWidget(QtWidgets.QWidget):
         print( self.last )
         if self.last == (-1,-1) :
             print('die')
-
-            print()
-            self.gui.no_suitable_path_dialog()
-            print('dce')
-            self.end_game()
+            self.end_game( "no_suitable_path_dialog" )
         else:
             self.array[ self.last ] = 0
             self._solve()  #TODO move to the function, same as in mouse press event
@@ -398,29 +397,33 @@ class Gui():
                 self.value += 1
 
     def final_time_dialog(self):
-        #self.time_future.cancel() # TODO buggy cancel
-        self.play_action.setChecked(False)
-        self._play()
         self._alert_dialog( True, "Game over!", "Your time was " + str(self.value) + " s." , "", QtWidgets.QMessageBox.Information )
 
     def no_suitable_path_dialog(self):
 
-        self.play_action.setChecked(False)
-        self._play()
         self._alert_dialog( True, "Impossible to play!", "Some dudes can't find the path towards castle" , "", QtWidgets.QMessageBox.Warning )
 
 
+    def end_game(self, dialog_function = "" ):
+
+        self.play_action.setChecked(False)
+        self.palette.show()
+        self.item_activated()
+        if dialog_function in dir(self):
+            getattr(self, dialog_function)()
+
     def _play(self):
-        isChecked = self.play_action.isChecked()
+
         self.grid.update()
 
-        if isChecked:
+        if self.play_action.isChecked():
+
             self.grid.selected = -1
             self.palette.hide()
             self.value = 0
 
             if self.running_timer == False:
-                #self.display = QtWidgets.QLCDNumber() #TODO diplay
+                #self.display = QtWidgets.QLCDNumber() #TODO display
                 #self.toolbar.addWidget( self.display )
                 self.time_future = asyncio.ensure_future(self._update_time())
                 self.running_timer = True
@@ -428,7 +431,8 @@ class Gui():
             self.grid.start_game()
 
         else:
-            self.palette.show()
+            self.grid.end_game("my_fucking_function")
+
             #self.display.hide()
 
 
@@ -501,18 +505,18 @@ class Gui():
         palette.addItem(item)
         item.setData( VALUE_ROLE, img.num )
 
+    def item_activated( self ):
+        for item in self.palette.selectedItems():
+            self.grid.selected = item.data(VALUE_ROLE)
+            #row_num = palette.indexFromItem(item).row()
+
     def _fill_palette( self ):
 
 
         for img in sorted(IMG.values(), key=lambda x: x.num ):
             self._add_item( self.palette, img )
 
-        def item_activated( ):
-            for item in self.palette.selectedItems():
-                self.grid.selected = item.data(VALUE_ROLE)
-                #row_num = palette.indexFromItem(item).row()
-
-        self.palette.itemSelectionChanged.connect(item_activated )
+        self.palette.itemSelectionChanged.connect(self.item_activated )
         self.palette.setCurrentRow(1)
 
 

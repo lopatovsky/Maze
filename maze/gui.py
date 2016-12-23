@@ -72,8 +72,16 @@ class GridWidget(QtWidgets.QWidget):
         self.cell_size = CELL_SIZE
         self.array = array
         self.set_grid_size()
-        self.play_mode = False;
+
         self._solve()
+
+    @property
+    def play_mode( self ):
+        return self.gui.play_action.isChecked()
+
+    @play_mode.setter
+    def play_mode(self, x):
+        raise ValueError #TODO, not exactly value error
 
     def _ptol(self,x,y):
         return y // self.cell_size, x // self.cell_size
@@ -404,7 +412,6 @@ class Gui():
 
     def _play(self):
         isChecked = self.play_action.isChecked()
-        self.grid.play_mode = isChecked
         self.grid.update()
 
         if isChecked:

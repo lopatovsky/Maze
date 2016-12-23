@@ -339,8 +339,6 @@ class Right_hand_Actor ( Actor ):
 
     async def behavior(self):
 
-       # self.visited = self.grid.array.copy()
-
         if self.grid.directions[ int(self.row), int(self.column) ] == b' ':
             self.grid.no_path()
         await self.jump(1.0)
@@ -353,8 +351,6 @@ class Right_hand_Actor ( Actor ):
         while True:
 
             direction = self.grid.directions[ int(self.row), int(self.column) ]
-            #self.visited[ self.row, self.column ] = -1
-
 
             if direction == b'X':
                         self.grid.end_game()
@@ -364,10 +360,6 @@ class Right_hand_Actor ( Actor ):
 
             if last_move[1] == 0: right = last_move[1], - last_move[0]
             else: right = last_move[1], last_move[0]
-
-            #print(self.row+right[0], self.column+right[1])
-
-            #print(self.grid.array[self.row+right[0], self.column+right[1]])
 
             if  self.is_ok( self.row+right[0], self.column+right[1] ) == False :
                 move = last_move
@@ -383,7 +375,6 @@ class Right_hand_Actor ( Actor ):
 
 
             while self.is_ok( self.row+move[0], self.column+move[1] ) == False:
-                print("here")
                 if move[0] == 0: move = -move[1], move[0]
                 else: move = move[1], move[0]
 

@@ -275,7 +275,7 @@ class GridWidget(QtWidgets.QWidget):
 
 
         for dude in self.dudes:
-            if self.directions[ int(round( dude.row )), int( round(dude.row)) ] == b' ':
+            if self.directions[ int(round( dude.row )), int( round(dude.column)) ] == b' ':
                 self.array[point] = 0
                 self._solve()
                 return
